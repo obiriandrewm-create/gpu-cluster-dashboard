@@ -1,0 +1,257 @@
+import React, { useEffect, useRef, useMemo } from 'react';
+import { cn } from '@/lib/utils';
+import * as d3 from 'd3';
+import styles from './BarChart.module.css';
+
+export interface BarDataPoint {
+  key: string;
+  value: number;
+  label?: string;
+  color?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface BarChartProps {
+  data: BarDataPoint[];
+  width?: number;
+  height?: number;
+  margin?: { top: number; right: number; bottom: number; left: number };
+  xAccessor: (d: BarDataPoint) => string;
+  yAccessor: (d: BarDataPoint) => number;
+  colorAccessor?: (d: BarDataPoint) => string;
+  defaultColor?: string;
+  showValues?: boolean;
+  valueFormat?: (value: number) => string;
+  xAxisLabel?: string;
+  yAxisLabel?: string;
+  onBarClick?: (bar: BarDataPoint) => void;
+  onBarHover?: (bar: BarDataPoint | null) => void;
+  animate?: boolean;
+  animationDuration?: number;
+  className?: string;
+  ariaLabel?: string;
+}
+
+export const BarChart: React.FC<BarChartProps> = ({
+  data,
+  width = 600,
+  height = 300,
+  margin = { top: 20, right: 20, bottom: 50, left: 50 },
+  xAccessor,
+  yAccessor,
+  colorAccessor,
+  defaultColor = 'var(--color-primary-500)',
+  showValues = false,
+  valueFormat = (v) => v.toLocaleString(),
+  xAxisLabel,
+  yAxisLabel,
+  onBarClick,
+  onBarHover,
+  animate = true,
+  animationDuration = 500,
+  className,
+  ariaLabel = 'Bar chart',
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+
+  const xScale = useMemo(() =>
+    d3.scaleBand<string>()
+      .domain(data.map(xAccessor))
+      .range([0, innerWidth])
+      .padding(0.2),
+    [data, xAccessor, innerWidth]
+  );
+
+  const yScale = useMemo(() => {
+    const maxVal = d3.max(data, yAccessor) ?? 1;
+    return d3.scaleLinear()
+      .domain([0, maxVal * 1.15])
+      .range([innerHeight, 0])
+      .nice();
+  }, [data, yAccessor, innerHeight]);
+
+  const colorScale = useMemo(() =>
+    colorAccessor
+      ? d3.scaleOrdinal<string, string>()
+        .domain(data.map(colorAccessor))
+        .range(data.map((_, i) => defaultColor))
+      : null,
+    [data, colorAccessor, defaultColor]
+  );
+
+  useEffect(() => {
+    if (!containerRef.current || !data.length) return;
+
+    const container = d3.select(containerRef.current);
+    container.selectAll('svg').remove();
+
+    const svg = container
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('role', 'img')
+      .attr('aria-label', ariaLabel);
+
+    const g = svg.append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Grid lines
+    g.append('g')
+      .attr('class', styles.grid)
+      .selectAll('line')
+      .data(yScale.ticks(5))
+      .enter()
+      .append('line')
+      .attr('x1', 0)
+      .attr('x2', innerWidth)
+      .attr('y1', d => yScale(d))
+      .attr('y2', d => yScale(d))
+      .attr('stroke', 'var(--color-border)')
+      .attr('stroke-width', 0.5);
+
+    // Bars
+    const bars = g.selectAll(`.${styles.bar}`)
+      .data(data)
+      .enter()
+      .append('rect')
+      .attr('class', styles.bar)
+      .attr('x', d => xScale(xAccessor(d)) ?? 0)
+      .attr('y', animate ? innerHeight : d => yScale(yAccessor(d)))
+      .attr('width', xScale.bandwidth())
+      .attr('height', animate ? 0 : d => innerHeight - yScale(yAccessor(d)))
+      .attr('fill', d => colorAccessor ? colorScale(colorAccessor(d)) ?? defaultColor : defaultColor)
+      .attr('rx', 2)
+      .attr('ry', 2)
+      .style('cursor', onBarClick ? 'pointer' : 'default')
+      .on('click', (event, d) => onBarClick?.(d))
+      .on('mouseenter', (event, d) => {
+        onBarHover?.(d);
+        showTooltip(d, event);
+      })
+      .on('mouseleave', () => {
+        onBarHover?.(null);
+        hideTooltip();
+      });
+
+    if (animate) {
+      bars.transition()
+        .duration(animationDuration)
+        .delay((_, i) => i * 30)
+        .ease(d3.easeCubicOut)
+        .attr('y', d => yScale(yAccessor(d)))
+        .attr('height', d => innerHeight - yScale(yAccessor(d)));
+    }
+
+    // Value labels
+    if (showValues) {
+      g.selectAll(`.${styles.value}`)
+        .data(data)
+        .enter()
+        .append('text')
+        .attr('class', styles.value)
+        .attr('x', d => (xScale(xAccessor(d)) ?? 0) + xScale.bandwidth() / 2)
+        .attr('y', d => yScale(yAccessor(d)) - 4)
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'var(--color-neutral-700)')
+        .attr('font-size', '11px')
+        .attr('font-family', 'var(--font-family-mono)')
+        .text(d => valueFormat(yAccessor(d)))
+        .style('opacity', animate ? 0 : 1);
+
+      if (animate) {
+        g.selectAll(`.${styles.value}`)
+          .transition()
+          .duration(animationDuration)
+          .delay((_, i) => i * 30 + animationDuration)
+          .style('opacity', 1);
+      }
+    }
+
+    // X Axis
+    const xAxis = d3.axisBottom(xScale)
+      .tickSize(0)
+      .tickPadding(8);
+
+    g.append('g')
+      .attr('class', styles.xAxis)
+      .attr('transform', `translate(0,${innerHeight})`)
+      .call(xAxis)
+      .selectAll('text')
+      .attr('fill', 'var(--color-neutral-500)')
+      .attr('font-size', '11px')
+      .attr('font-family', 'var(--font-family-mono)')
+      .attr('transform', 'rotate(-45)')
+      .style('text-anchor', 'end');
+
+    g.select(`.${styles.xAxis} .domain`).remove();
+
+    if (xAxisLabel) {
+      g.append('text')
+        .attr('class', styles.axisLabel)
+        .attr('x', innerWidth / 2)
+        .attr('y', innerHeight + 40)
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'var(--color-neutral-500)')
+        .attr('font-size', '12px')
+        .text(xAxisLabel);
+    }
+
+    // Y Axis
+    const yAxis = d3.axisLeft(yScale)
+      .ticks(5)
+      .tickFormat(d3.format('.2s'))
+      .tickSize(-innerWidth)
+      .tickPadding(8);
+
+    g.append('g')
+      .attr('class', styles.yAxis)
+      .call(yAxis)
+      .selectAll('text')
+      .attr('fill', 'var(--color-neutral-500)')
+      .attr('font-size', '11px')
+      .attr('font-family', 'var(--font-family-mono)');
+
+    g.select(`.${styles.yAxis} .domain`).remove();
+    g.selectAll(`.${styles.yAxis} line`).attr('stroke', 'var(--color-border)');
+
+    if (yAxisLabel) {
+      g.append('text')
+        .attr('class', styles.axisLabel)
+        .attr('transform', 'rotate(-90)')
+        .attr('x', -innerHeight / 2)
+        .attr('y', -40)
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'var(--color-neutral-500)')
+        .attr('font-size', '12px')
+        .text(yAxisLabel);
+    }
+  }, [data, width, height, margin, innerWidth, innerHeight, xScale, yScale, colorScale, xAccessor, yAccessor, colorAccessor, defaultColor, showValues, valueFormat, xAxisLabel, yAxisLabel, onBarClick, onBarHover, animate, animationDuration, ariaLabel]);
+
+  const showTooltip = (bar: BarDataPoint, event: MouseEvent) => {
+    if (!tooltipRef.current) return;
+    const x = (xScale(xAccessor(bar)) ?? 0) + xScale.bandwidth() / 2 + margin.left;
+    const y = yScale(yAccessor(bar)) + margin.top;
+    const content = `
+      <div><strong>${bar.label ?? xAccessor(bar)}</strong></div>
+      <div>${valueFormat(yAccessor(bar))}</div>
+    `;
+    tooltipRef.current.innerHTML = content;
+    tooltipRef.current.style.left = `${x}px`;
+    tooltipRef.current.style.top = `${y - 10}px`;
+    tooltipRef.current.style.opacity = '1';
+  };
+
+  const hideTooltip = () => {
+    if (tooltipRef.current) tooltipRef.current.style.opacity = '0';
+  };
+
+  return (
+    <div className={cn(styles.container, className)} ref={containerRef}>
+      <div ref={tooltipRef} className={styles.tooltip} />
+    </div>
+  );
+};
