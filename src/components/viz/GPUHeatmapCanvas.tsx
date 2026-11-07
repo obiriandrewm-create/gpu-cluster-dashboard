@@ -3,8 +3,7 @@
  * Renders 100K+ GPU cells at 60fps using instanced rendering
  */
 
-import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react';
-import * as THREE from 'three';
+import React, { useRef, useEffect, useCallback, useState, useImperativeHandle } from 'react';
 import {
   useThreeScene,
   GPUCellData,
@@ -121,6 +120,9 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
     const legendCanvasRef = useRef<HTMLCanvasElement>(null);
+
+    // Expose container element via forwarded ref
+    useImperativeHandle(ref, () => containerRef.current as HTMLDivElement, []);
     
     const [hoveredGPU, setHoveredGPU] = useState<GPUCellData | null>(null);
     const [hoverScreenPos, setHoverScreenPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -129,14 +131,12 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState(false);
     const [panStart, setPanStart] = useState({ x: 0, y: 0 });
-    const [legendSize, setLegendSize] = useState({ width: 0, height: 0 });
 
     // Animation hook for zoom/pan transitions
-    const { animate, reducedMotion } = useAnimation({ respectReducedMotion: true });
+    const { reducedMotion } = useAnimation({ respectReducedMotion: true });
 
     // Calculate grid dimensions to fit container
     const { width: containerWidth, height: containerHeight } = containerSize;
-    const aspectRatio = containerWidth / containerHeight;
 
     // Use Three.js scene hook
     const threeScene = useThreeScene({
@@ -187,7 +187,6 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
       const canvas = canvasRef.current;
       if (!canvas || !threeScene.raycaster || !threeScene.camera || !threeScene.mesh) return;
 
-      const rect = canvas.getBoundingClientRect();
       const clientX = event.clientX;
       const clientY = event.clientY;
       
@@ -202,7 +201,7 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
       );
 
       if (picked && picked.index >= 0 && picked.index < cells.length) {
-        const gpu = cells[picked.index];
+        const gpu = cells[picked.index] as GPUCellData;
         setHoveredGPU(gpu);
         onGPUHover?.(gpu, { x: clientX, y: clientY });
       } else {
@@ -231,7 +230,7 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
       );
 
       if (picked && picked.index >= 0 && picked.index < cells.length) {
-        const gpu = cells[picked.index];
+        const gpu = cells[picked.index] as GPUCellData;
         onGPUClick?.(gpu, { x: event.clientX, y: event.clientY });
       }
     }, [cells, threeScene, onGPUClick]);
@@ -256,8 +255,8 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
       event.preventDefault();
     }, [enableZoomPan]);
 
-    // Handle pan move
-    const handlePanMove = useCallback((event: MouseEvent) => {
+    // Handle pan move (native event for window listeners)
+    const handlePanMoveNative = useCallback((event: MouseEvent) => {
       if (!isPanning || !enableZoomPan) return;
       
       const dx = (event.clientX - panStart.x) / containerWidth * zoom;
@@ -269,22 +268,32 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
       }));
     }, [isPanning, enableZoomPan, containerWidth, containerHeight, zoom, panStart]);
 
-    // Handle pan end
-    const handlePanEnd = useCallback(() => {
+    // Handle pan move (React event for onMouseMove)
+    const handlePanMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+      handlePanMoveNative(event.nativeEvent);
+    }, [handlePanMoveNative]);
+
+    // Handle pan end (native event for window listeners)
+    const handlePanEndNative = useCallback(() => {
       setIsPanning(false);
     }, []);
+
+    // Handle pan end (React event for onMouseUp/onMouseLeave)
+    const handlePanEnd = useCallback(() => {
+      handlePanEndNative();
+    }, [handlePanEndNative]);
 
     // Attach pan listeners
     useEffect(() => {
       if (isPanning) {
-        window.addEventListener('mousemove', handlePanMove);
-        window.addEventListener('mouseup', handlePanEnd);
+        window.addEventListener('mousemove', handlePanMoveNative);
+        window.addEventListener('mouseup', handlePanEndNative);
         return () => {
-          window.removeEventListener('mousemove', handlePanMove);
-          window.removeEventListener('mouseup', handlePanEnd);
+          window.removeEventListener('mousemove', handlePanMoveNative);
+          window.removeEventListener('mouseup', handlePanEndNative);
         };
       }
-    }, [isPanning, handlePanMove, handlePanEnd]);
+    }, [isPanning, handlePanMoveNative, handlePanEndNative]);
 
     // Draw legend on canvas
     useEffect(() => {
@@ -320,7 +329,6 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
       ctx.textAlign = 'right';
       ctx.fillText(legendLabels[colorMode].max, width, height + 14);
 
-      setLegendSize({ width, height: height + 20 });
     }, [colorMode, showLegend, legendLabels]);
 
     // Get color mode display name
@@ -334,13 +342,7 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
 
     return (
       <div
-        ref={(el) => {
-          containerRef.current = el;
-          if (ref) {
-            if (typeof ref === 'function') ref(el);
-            else ref.current = el;
-          }
-        }}
+        ref={containerRef}
         className={`${styles.container} ${className}`}
         style={style}
         onWheel={handleWheel}
@@ -406,7 +408,7 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
 
         {/* Legend */}
         {showLegend && (
-          <div className={styles.legend} ref={legendCanvasRef as any}>
+          <div className={styles.legend}>
             <canvas ref={legendCanvasRef} className={styles.legendCanvas} aria-hidden="true" />
             <div className={styles.legendLabel}>{getColorModeLabel()}</div>
           </div>

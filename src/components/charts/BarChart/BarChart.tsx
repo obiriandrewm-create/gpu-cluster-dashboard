@@ -63,25 +63,31 @@ export const BarChart: React.FC<BarChartProps> = ({
       .domain(data.map(xAccessor))
       .range([0, innerWidth])
       .padding(0.2),
-    [data, xAccessor, innerWidth]
+  [data, xAccessor, innerWidth]
   );
 
   const yScale = useMemo(() => {
     const maxVal = d3.max(data, yAccessor) ?? 1;
-    return d3.scaleLinear()
+    const scale = d3.scaleLinear<number, number>()
       .domain([0, maxVal * 1.15])
       .range([innerHeight, 0])
       .nice();
+    return scale;
   }, [data, yAccessor, innerHeight]);
 
   const colorScale = useMemo(() =>
     colorAccessor
       ? d3.scaleOrdinal<string, string>()
         .domain(data.map(colorAccessor))
-        .range(data.map((_, i) => defaultColor))
+        .range(data.map((_, _i) => defaultColor))
       : null,
-    [data, colorAccessor, defaultColor]
+  [data, colorAccessor, defaultColor]
   );
+
+  // Helper functions with proper non-null assertions
+  const getX = (key: string): string => (xScale(key) ?? 0) as unknown as string;
+  const getY = (value: number): number => (yScale(value) as number);
+  const getColor = (key: string): string => (colorScale?.(key) ?? defaultColor) as string;
 
   useEffect(() => {
     if (!containerRef.current || !data.length) return;
@@ -101,36 +107,36 @@ export const BarChart: React.FC<BarChartProps> = ({
 
     // Grid lines
     g.append('g')
-      .attr('class', styles.grid)
+      .attr('class', styles.grid as string)
       .selectAll('line')
       .data(yScale.ticks(5))
       .enter()
       .append('line')
       .attr('x1', 0)
       .attr('x2', innerWidth)
-      .attr('y1', d => yScale(d))
-      .attr('y2', d => yScale(d))
+      .attr('y1', (d: number) => getY(d))
+      .attr('y2', (d: number) => getY(d))
       .attr('stroke', 'var(--color-border)')
       .attr('stroke-width', 0.5);
 
     // Bars
-    const bars = g.selectAll(`.${styles.bar}`)
+    const bars = g.selectAll<SVGRectElement, BarDataPoint>(`.${styles.bar as string}`)
       .data(data)
       .enter()
       .append('rect')
-      .attr('class', styles.bar)
-      .attr('x', d => xScale(xAccessor(d)) ?? 0)
-      .attr('y', animate ? innerHeight : d => yScale(yAccessor(d)))
+      .attr('class', styles.bar as string)
+      .attr('x', (d) => getX(xAccessor(d)))
+      .attr('y', animate ? innerHeight : (d) => getY(yAccessor(d)))
       .attr('width', xScale.bandwidth())
-      .attr('height', animate ? 0 : d => innerHeight - yScale(yAccessor(d)))
-      .attr('fill', d => colorAccessor ? colorScale(colorAccessor(d)) ?? defaultColor : defaultColor)
+      .attr('height', animate ? 0 : (d) => innerHeight - getY(yAccessor(d)))
+      .attr('fill', (d) => colorAccessor ? getColor(colorAccessor(d)) : defaultColor)
       .attr('rx', 2)
       .attr('ry', 2)
       .style('cursor', onBarClick ? 'pointer' : 'default')
-      .on('click', (event, d) => onBarClick?.(d))
-      .on('mouseenter', (event, d) => {
+      .on('click', (_event, d) => onBarClick?.(d))
+      .on('mouseenter', (_event, d) => {
         onBarHover?.(d);
-        showTooltip(d, event);
+        showTooltip(d, _event as MouseEvent);
       })
       .on('mouseleave', () => {
         onBarHover?.(null);
@@ -140,46 +146,46 @@ export const BarChart: React.FC<BarChartProps> = ({
     if (animate) {
       bars.transition()
         .duration(animationDuration)
-        .delay((_, i) => i * 30)
+        .delay((_, _i) => _i * 30)
         .ease(d3.easeCubicOut)
-        .attr('y', d => yScale(yAccessor(d)))
-        .attr('height', d => innerHeight - yScale(yAccessor(d)));
+        .attr('y', (d) => getY(yAccessor(d)))
+        .attr('height', (d) => innerHeight - getY(yAccessor(d)));
     }
 
     // Value labels
     if (showValues) {
-      g.selectAll(`.${styles.value}`)
+      g.selectAll<SVGTextElement, BarDataPoint>(`.${styles.value as string}`)
         .data(data)
         .enter()
         .append('text')
-        .attr('class', styles.value)
-        .attr('x', d => (xScale(xAccessor(d)) ?? 0) + xScale.bandwidth() / 2)
-        .attr('y', d => yScale(yAccessor(d)) - 4)
+        .attr('class', styles.value as string)
+        .attr('x', (d) => getX(xAccessor(d)) + xScale.bandwidth() / 2)
+        .attr('y', (d) => getY(yAccessor(d)) - 4)
         .attr('text-anchor', 'middle')
         .attr('fill', 'var(--color-neutral-700)')
         .attr('font-size', '11px')
         .attr('font-family', 'var(--font-family-mono)')
-        .text(d => valueFormat(yAccessor(d)))
+        .text((d) => valueFormat(yAccessor(d)))
         .style('opacity', animate ? 0 : 1);
 
       if (animate) {
-        g.selectAll(`.${styles.value}`)
+        g.selectAll(`.${styles.value as string}`)
           .transition()
           .duration(animationDuration)
-          .delay((_, i) => i * 30 + animationDuration)
+          .delay((_, _i) => _i * 30 + animationDuration)
           .style('opacity', 1);
       }
     }
 
     // X Axis
-    const xAxis = d3.axisBottom(xScale)
+    const xAxis = d3.axisBottom<string>(xScale)
       .tickSize(0)
       .tickPadding(8);
 
     g.append('g')
-      .attr('class', styles.xAxis)
+      .attr('class', styles.xAxis as string)
       .attr('transform', `translate(0,${innerHeight})`)
-      .call(xAxis)
+      .call(xAxis as unknown as (g: d3.Selection<SVGGElement, unknown, null, undefined>) => void)
       .selectAll('text')
       .attr('fill', 'var(--color-neutral-500)')
       .attr('font-size', '11px')
@@ -187,54 +193,56 @@ export const BarChart: React.FC<BarChartProps> = ({
       .attr('transform', 'rotate(-45)')
       .style('text-anchor', 'end');
 
-    g.select(`.${styles.xAxis} .domain`).remove();
+    g.select(`.${styles.xAxis as string} .domain`).remove();
 
     if (xAxisLabel) {
       g.append('text')
-        .attr('class', styles.axisLabel)
+        .attr('class', styles.axisLabel as string)
         .attr('x', innerWidth / 2)
         .attr('y', innerHeight + 40)
         .attr('text-anchor', 'middle')
         .attr('fill', 'var(--color-neutral-500)')
         .attr('font-size', '12px')
+        .attr('font-family', 'var(--font-family-mono)')
         .text(xAxisLabel);
     }
 
     // Y Axis
-    const yAxis = d3.axisLeft(yScale)
+    const yAxis = d3.axisLeft<number>(yScale)
       .ticks(5)
       .tickFormat(d3.format('.2s'))
       .tickSize(-innerWidth)
       .tickPadding(8);
 
     g.append('g')
-      .attr('class', styles.yAxis)
-      .call(yAxis)
+      .attr('class', styles.yAxis as string)
+      .call(yAxis as unknown as (g: d3.Selection<SVGGElement, unknown, null, undefined>) => void)
       .selectAll('text')
       .attr('fill', 'var(--color-neutral-500)')
       .attr('font-size', '11px')
       .attr('font-family', 'var(--font-family-mono)');
 
-    g.select(`.${styles.yAxis} .domain`).remove();
-    g.selectAll(`.${styles.yAxis} line`).attr('stroke', 'var(--color-border)');
+    g.select(`.${styles.yAxis as string} .domain`).remove();
+    g.selectAll(`.${styles.yAxis as string} line`).attr('stroke', 'var(--color-border)');
 
     if (yAxisLabel) {
       g.append('text')
-        .attr('class', styles.axisLabel)
+        .attr('class', styles.axisLabel as string)
         .attr('transform', 'rotate(-90)')
         .attr('x', -innerHeight / 2)
         .attr('y', -40)
         .attr('text-anchor', 'middle')
         .attr('fill', 'var(--color-neutral-500)')
         .attr('font-size', '12px')
+        .attr('font-family', 'var(--font-family-mono)')
         .text(yAxisLabel);
     }
   }, [data, width, height, margin, innerWidth, innerHeight, xScale, yScale, colorScale, xAccessor, yAccessor, colorAccessor, defaultColor, showValues, valueFormat, xAxisLabel, yAxisLabel, onBarClick, onBarHover, animate, animationDuration, ariaLabel]);
 
-  const showTooltip = (bar: BarDataPoint, event: MouseEvent) => {
+  const showTooltip = (bar: BarDataPoint, _event: MouseEvent) => {
     if (!tooltipRef.current) return;
-    const x = (xScale(xAccessor(bar)) ?? 0) + xScale.bandwidth() / 2 + margin.left;
-    const y = yScale(yAccessor(bar)) + margin.top;
+    const x = getX(xAccessor(bar)) + xScale.bandwidth() / 2 + margin.left;
+    const y = getY(yAccessor(bar)) + margin.top;
     const content = `
       <div><strong>${bar.label ?? xAccessor(bar)}</strong></div>
       <div>${valueFormat(yAccessor(bar))}</div>
@@ -250,8 +258,8 @@ export const BarChart: React.FC<BarChartProps> = ({
   };
 
   return (
-    <div className={cn(styles.container, className)} ref={containerRef}>
-      <div ref={tooltipRef} className={styles.tooltip} />
+    <div className={cn(styles.container as string, className)} ref={containerRef}>
+      <div ref={tooltipRef} className={styles.tooltip as string} />
     </div>
   );
 };

@@ -446,7 +446,7 @@ export const tokens = {
 
 export type ColorToken = keyof typeof colors;
 export type ColorScaleToken<T extends ColorToken> = keyof typeof colors[T];
-export type SpacingToken = keyof typeof spacing;
+export type SpacingToken = keyof typeof spacing & string;
 export type FontSizeToken = keyof typeof typography.fontSize;
 export type FontWeightToken = keyof typeof typography.fontWeight;
 export type LineHeightToken = keyof typeof typography.lineHeight;
@@ -508,7 +508,8 @@ export function getColorToken(
 }
 
 export function getSpacingToken(token: SpacingToken): string {
-  return spacing[token] ?? '';
+  const value = spacing[token];
+  return typeof value === 'string' ? value : '';
 }
 
 export function getFontSizeToken(token: FontSizeToken): string {

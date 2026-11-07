@@ -64,11 +64,11 @@ export interface InstancedMeshConfig {
   /** Whether to enable fisheye distortion */
   fisheyeEnabled: boolean;
   /** Fisheye focus point (normalized 0-1) */
-  fisheyeFocus?: { x: number; y: number };
+  fisheyeFocus?: { x: number; y: number } | undefined;
   /** Fisheye radius (normalized 0-1) */
-  fisheyeRadius?: number;
+  fisheyeRadius?: number | undefined;
   /** Fisheye strength */
-  fisheyeStrength?: number;
+  fisheyeStrength?: number | undefined;
 }
 
 /**
@@ -145,7 +145,7 @@ export function createRenderer(config: ThreeSceneConfig): THREE.WebGLRenderer {
  */
 export function createOrthographicCamera(config: CameraConfig = {}): THREE.OrthographicCamera {
   const {
-    fov = 50,
+    fov: _fov = 50,
     aspect = 1,
     near = 0.1,
     far = 1000,
@@ -175,7 +175,7 @@ export function createOrthographicCamera(config: CameraConfig = {}): THREE.Ortho
  */
 export function createPerspectiveCamera(config: CameraConfig = {}): THREE.PerspectiveCamera {
   const {
-    fov = 50,
+    fov: _fov = 50,
     aspect = 1,
     near = 0.1,
     far = 1000,
@@ -183,7 +183,7 @@ export function createPerspectiveCamera(config: CameraConfig = {}): THREE.Perspe
     target = new THREE.Vector3(0, 0, 0),
   } = config;
 
-  const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+  const camera = new THREE.PerspectiveCamera(_fov, aspect, near, far);
   camera.position.copy(position);
   camera.lookAt(target);
   camera.updateProjectionMatrix();
@@ -362,6 +362,7 @@ export function updateGPUInstancedMesh(
   // Update instance matrix and colors
   for (let i = 0; i < count; i++) {
     const cell = cells[i];
+    if (!cell) continue;
     
     // Calculate world position from grid position
     const x = (cell.gridX - (gridWidth - 1) / 2) * (cellSize + cellGap);
@@ -427,8 +428,8 @@ function getColorModeIndex(mode: 'health' | 'utilization' | 'temperature'): numb
  * Creates a raycaster for GPU cell picking
  */
 export function createGPURaycaster(
-  camera: THREE.Camera,
-  canvas: HTMLCanvasElement
+  _camera: THREE.Camera,
+  _canvas: HTMLCanvasElement
 ): THREE.Raycaster {
   const raycaster = new THREE.Raycaster();
   raycaster.params.Mesh = { threshold: 0.01 };
@@ -464,6 +465,7 @@ export function pickGPUCell(
   const intersects = raycaster.intersectObject(mesh, false);
   if (intersects.length > 0) {
     const intersect = intersects[0];
+    if (!intersect) return null;
     return {
       index: intersect.instanceId ?? -1,
       point: intersect.point,
@@ -479,7 +481,7 @@ export function disposeThreeResources(
   renderer: THREE.WebGLRenderer | null,
   scene: THREE.Scene | null,
   mesh: THREE.InstancedMesh | null,
-  camera: THREE.Camera | null
+  _camera: THREE.Camera | null
 ): void {
   if (mesh) {
     mesh.geometry.dispose();
@@ -534,7 +536,7 @@ export function calculateGridDimensions(gpuCount: number, aspectRatio: number): 
 export function generateMockGPUCells(
   count: number,
   gridWidth: number,
-  gridHeight: number
+  _gridHeight: number
 ): GPUCellData[] {
   const cells: GPUCellData[] = [];
   

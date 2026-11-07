@@ -12,6 +12,7 @@ import {
   createGPUInstancedMesh,
   updateGPUInstancedMesh,
   disposeThreeResources,
+  createGPURaycaster,
   GPUCellData,
   InstancedMeshConfig,
   ThreeSceneConfig,
@@ -37,11 +38,11 @@ export interface UseThreeSceneOptions {
   /** Fisheye enabled */
   fisheyeEnabled: boolean;
   /** Fisheye focus point */
-  fisheyeFocus?: { x: number; y: number };
+  fisheyeFocus?: { x: number; y: number } | undefined;
   /** Fisheye radius */
-  fisheyeRadius?: number;
+  fisheyeRadius?: number | undefined;
   /** Fisheye strength */
-  fisheyeStrength?: number;
+  fisheyeStrength?: number | undefined;
   /** Animation frame callback */
   onAnimationFrame?: (delta: number) => void;
   /** Whether to auto-start animation */
@@ -176,9 +177,9 @@ export function useThreeScene(options: UseThreeSceneOptions): UseThreeSceneRetur
       gridHeight,
       colorMode,
       fisheyeEnabled,
-      fisheyeFocus,
-      fisheyeRadius,
-      fisheyeStrength,
+      fisheyeFocus: fisheyeFocus ?? { x: 0.5, y: 0.5 },
+      fisheyeRadius: fisheyeRadius ?? 0.3,
+      fisheyeStrength: fisheyeStrength ?? 2.0,
     };
     const mesh = createGPUInstancedMesh(meshConfig);
     scene.add(mesh);
@@ -416,3 +417,7 @@ export function useThreeScene(options: UseThreeSceneOptions): UseThreeSceneRetur
     raycaster: raycasterRef.current,
   };
 }
+
+// Re-export utilities for consumers
+export type { GPUCellData } from '@/lib/three-helpers';
+export { createGPURaycaster, getNormalizedCoords, pickGPUCell } from '@/lib/three-helpers';

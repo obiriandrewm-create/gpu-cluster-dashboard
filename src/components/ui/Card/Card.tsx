@@ -14,7 +14,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       className={cn(
         styles.card,
         styles[variant],
-        styles[`p-${padding}`],
+        styles[`padding-${padding}`],
         className
       )}
       {...props}
@@ -23,31 +23,53 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     </div>
   )
 );
+
 Card.displayName = 'Card';
 
-export const CardHeader = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+export interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
   ({ className, children, ...props }, ref) => (
-    <div ref={ref} className={cn(styles.header, className)} {...props}>
+    <div
+      ref={ref}
+      className={cn(styles.header, className)}
+      {...props}
+    >
       {children}
     </div>
   )
 );
+
 CardHeader.displayName = 'CardHeader';
 
-export const CardContent = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+export interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+export const CardContent = forwardRef<HTMLDivElement, CardContentProps>(
   ({ className, children, ...props }, ref) => (
-    <div ref={ref} className={cn(styles.content, className)} {...props}>
+    <div
+      ref={ref}
+      className={cn(styles.content, className)}
+      {...props}
+    >
       {children}
     </div>
   )
 );
+
 CardContent.displayName = 'CardContent';
 
-export const CardFooter = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+export interface CardFooterProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+export const CardFooter = forwardRef<HTMLDivElement, CardFooterProps>(
   ({ className, children, ...props }, ref) => (
-    <div ref={ref} className={cn(styles.footer, className)} {...props}>
+    <div
+      ref={ref}
+      className={cn(styles.footer, className)}
+      {...props}
+    >
       {children}
     </div>
   )
 );
+
 CardFooter.displayName = 'CardFooter';

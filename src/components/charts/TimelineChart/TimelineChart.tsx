@@ -50,8 +50,7 @@ export const TimelineChart: React.FC<TimelineChartProps> = ({
   ariaLabel = 'Timeline chart',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
+    const tooltipRef = useRef<HTMLDivElement>(null);
 
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
@@ -68,27 +67,31 @@ export const TimelineChart: React.FC<TimelineChartProps> = ({
     const values = data.map(yAccessor);
     const minVal = d3.min(values) ?? 0;
     const maxVal = d3.max(values) ?? 1;
-    return d3.scaleLinear()
+    return d3.scaleLinear<number, number>()
       .domain([minVal * 0.95, maxVal * 1.05])
       .range([innerHeight, 0])
       .nice();
   }, [data, yAccessor, innerHeight]);
 
+  // Helper functions for non-null returns
+  const getX = (date: Date): number => (xScale(date) as number);
+  const getY = (value: number): number => (yScale(value) as number);
+
   const lineGenerator = useMemo(() =>
     d3.line<TimelineDataPoint>()
-      .x(d => xScale(xAccessor(d)))
-      .y(d => yScale(yAccessor(d)))
+      .x((d) => getX(xAccessor(d)))
+      .y((d) => getY(yAccessor(d)))
       .curve(d3.curveMonotoneX),
-    [xScale, yScale, xAccessor, yAccessor]
+  [xScale, yScale, xAccessor, yAccessor]
   );
 
   const areaGenerator = useMemo(() =>
     d3.area<TimelineDataPoint>()
-      .x(d => xScale(xAccessor(d)))
+      .x((d) => getX(xAccessor(d)))
       .y0(innerHeight)
-      .y1(d => yScale(yAccessor(d)))
+      .y1((d) => getY(yAccessor(d)))
       .curve(d3.curveMonotoneX),
-    [xScale, yScale, xAccessor, yAccessor, innerHeight]
+  [xScale, yScale, xAccessor, yAccessor, innerHeight]
   );
 
   useEffect(() => {
@@ -109,15 +112,15 @@ export const TimelineChart: React.FC<TimelineChartProps> = ({
 
     // Grid lines
     g.append('g')
-      .attr('class', styles.grid)
+      .attr('class', styles.grid as string)
       .selectAll('line')
       .data(yScale.ticks(5))
       .enter()
       .append('line')
       .attr('x1', 0)
       .attr('x2', innerWidth)
-      .attr('y1', d => yScale(d))
-      .attr('y2', d => yScale(d))
+      .attr('y1', (d: number) => getY(d))
+      .attr('y2', (d: number) => getY(d))
       .attr('stroke', 'var(--color-border)')
       .attr('stroke-width', 0.5);
 
@@ -125,7 +128,7 @@ export const TimelineChart: React.FC<TimelineChartProps> = ({
     if (showArea) {
       g.append('path')
         .datum(data)
-        .attr('class', styles.area)
+        .attr('class', styles.area as string)
         .attr('d', areaGenerator as any)
         .attr('fill', areaColor)
         .attr('fill-opacity', 0.3);
@@ -134,7 +137,7 @@ export const TimelineChart: React.FC<TimelineChartProps> = ({
     // Line
     g.append('path')
       .datum(data)
-      .attr('class', styles.line)
+      .attr('class', styles.line as string)
       .attr('d', lineGenerator as any)
       .attr('fill', 'none')
       .attr('stroke', lineColor)
@@ -144,22 +147,22 @@ export const TimelineChart: React.FC<TimelineChartProps> = ({
 
     // Points
     if (showPoints) {
-      g.selectAll('circle')
+      g.selectAll<SVGCircleElement, TimelineDataPoint>('circle')
         .data(data)
         .enter()
         .append('circle')
-        .attr('class', styles.point)
-        .attr('cx', d => xScale(xAccessor(d)))
-        .attr('cy', d => yScale(yAccessor(d)))
+        .attr('class', styles.point as string)
+        .attr('cx', (d) => getX(xAccessor(d)))
+        .attr('cy', (d) => getY(yAccessor(d)))
         .attr('r', 4)
         .attr('fill', pointColor)
         .attr('stroke', 'var(--color-surface)')
         .attr('stroke-width', 2)
         .style('cursor', onPointClick ? 'pointer' : 'default')
-        .on('click', (event, d) => onPointClick?.(d))
-        .on('mouseenter', (event, d) => {
+        .on('click', (_event, d) => onPointClick?.(d))
+        .on('mouseenter', (_event, d) => {
           onPointHover?.(d);
-          showTooltip(d, event);
+          showTooltip(d, _event as MouseEvent);
         })
         .on('mouseleave', () => {
           onPointHover?.(null);
@@ -168,14 +171,14 @@ export const TimelineChart: React.FC<TimelineChartProps> = ({
     }
 
     // X Axis
-    const xAxis = d3.axisBottom(xScale)
+    const xAxis = d3.axisBottom<Date>(xScale)
       .ticks(innerWidth / 80)
       .tickFormat(d3.timeFormat(xAxisFormat))
       .tickSize(-innerHeight)
       .tickPadding(8);
 
     g.append('g')
-      .attr('class', styles.xAxis)
+      .attr('class', styles.xAxis as string)
       .attr('transform', `translate(0,${innerHeight})`)
       .call(xAxis)
       .selectAll('text')
@@ -183,34 +186,34 @@ export const TimelineChart: React.FC<TimelineChartProps> = ({
       .attr('font-size', '11px')
       .attr('font-family', 'var(--font-family-mono)');
 
-    g.select(`.${styles.xAxis} .domain`).remove();
-    g.selectAll(`.${styles.xAxis} line`).attr('stroke', 'var(--color-border)');
+    g.select(`.${styles.xAxis as string} .domain`).remove();
+    g.selectAll(`.${styles.xAxis as string} line`).attr('stroke', 'var(--color-border)');
 
     // Y Axis
-    const yAxis = d3.axisLeft(yScale)
+    const yAxis = d3.axisLeft<number>(yScale)
       .ticks(5)
       .tickFormat(yAxisFormat ?? d3.format('.2s'))
       .tickSize(-innerWidth)
       .tickPadding(8);
 
     g.append('g')
-      .attr('class', styles.yAxis)
+      .attr('class', styles.yAxis as string)
       .call(yAxis)
       .selectAll('text')
       .attr('fill', 'var(--color-neutral-500)')
       .attr('font-size', '11px')
       .attr('font-family', 'var(--font-family-mono)');
 
-    g.select(`.${styles.yAxis} .domain`).remove();
-    g.selectAll(`.${styles.yAxis} line`).attr('stroke', 'var(--color-border)');
+    g.select(`.${styles.yAxis as string} .domain`).remove();
+    g.selectAll(`.${styles.yAxis as string} line`).attr('stroke', 'var(--color-border)');
 
-    svgRef.current = svg.node() as SVGSVGElement;
   }, [data, width, height, margin, innerWidth, innerHeight, xScale, yScale, lineGenerator, areaGenerator, showArea, showPoints, xAxisFormat, yAxisFormat, lineColor, areaColor, pointColor, onPointClick, onPointHover, ariaLabel]);
 
-  const showTooltip = (point: TimelineDataPoint, event: MouseEvent) => {
+  const showTooltip = (point: TimelineDataPoint, _event: MouseEvent) => {
     if (!tooltipRef.current) return;
-    const x = xScale(xAccessor(point)) + margin.left;
-    const y = yScale(yAccessor(point)) + margin.top;
+    const x = getX(xAccessor(point)) + margin.left;
+    const y = getY(yAccessor(point)) + margin.top;
+    const formatTime = (date: Date) => d3.timeFormat(xAxisFormat)(date);
     const content = `
       <div><strong>${point.label ?? formatTime(xAccessor(point))}</strong></div>
       <div>${yAxisFormat ? yAxisFormat(yAccessor(point)) : yAccessor(point).toFixed(2)}</div>
@@ -225,11 +228,9 @@ export const TimelineChart: React.FC<TimelineChartProps> = ({
     if (tooltipRef.current) tooltipRef.current.style.opacity = '0';
   };
 
-  const formatTime = (date: Date) => d3.timeFormat(xAxisFormat)(date);
-
   return (
-    <div className={cn(styles.container, className)} ref={containerRef}>
-      <div ref={tooltipRef} className={styles.tooltip} />
+    <div className={cn(styles.container as string, className)} ref={containerRef}>
+      <div ref={tooltipRef} className={styles.tooltip as string} />
     </div>
   );
 };

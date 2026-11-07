@@ -3,7 +3,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { TimelineChart } from '@/components/charts/TimelineChart';
 import { ProgressRing } from '@/components/charts/ProgressRing';
-import { formatNumber, formatBytes, formatDuration } from '@/lib/utils';
+
 import styles from './StragglerPanel.module.css';
 
 export interface StragglerPanelProps {
@@ -52,7 +52,7 @@ export const StragglerPanel: React.FC<StragglerPanelProps> = ({
   onDrillDown,
   className,
 }) => {
-  const timelineData = useMemo(() => straggler.timeline.map((event, index) => ({
+  const timelineData = useMemo(() => straggler.timeline.map((event, _index) => ({
     timestamp: event.timestamp,
     value: event.score,
     label: `${event.eventType}: ${event.details}`,
@@ -76,8 +76,8 @@ export const StragglerPanel: React.FC<StragglerPanelProps> = ({
               <span className={styles.nodeId}>Node: {straggler.nodeId}</span>
             </div>
             <div className={styles.severity}>
-              <Badge variant={severityColors[straggler.severity]} dot size="md">
-                {severityLabels[straggler.severity]}
+              <Badge variant={severityColors[straggler.severity] ?? 'info'} dot size="md">
+                {severityLabels[straggler.severity] ?? 'Unknown'}
               </Badge>
               <ProgressRing
                 progress={straggler.score}

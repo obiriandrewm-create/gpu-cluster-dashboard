@@ -2,9 +2,12 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import styles from './Badge.module.css';
 
+export type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info';
+export type BadgeSize = 'sm' | 'md' | 'lg';
+
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
-  size?: 'sm' | 'md';
+  variant?: BadgeVariant;
+  size?: BadgeSize;
   dot?: boolean;
 }
 

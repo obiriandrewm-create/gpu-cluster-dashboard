@@ -87,8 +87,17 @@ const mockCanvasContext = {
   roundRect: vi.fn(),
 };
 
+// @ts-expect-error - Mocking getContext with multiple context types
 HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string) => {
   if (contextId === '2d') return mockCanvasContext;
+  if (contextId === 'webgl' || contextId === 'webgl2' || contextId === 'experimental-webgl') {
+    // Return a minimal WebGL context mock
+    return {
+      getExtension: vi.fn(() => null),
+      getParameter: vi.fn(() => 0),
+      getContextAttributes: vi.fn(() => null),
+    } as unknown as WebGLRenderingContext;
+  }
   return null;
 });
 

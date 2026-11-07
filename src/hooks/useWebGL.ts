@@ -165,8 +165,8 @@ export function useWebGL(options: UseWebGLOptions): UseWebGLReturn {
       canvas.getContext('webgl2', contextAttributes);
     
     if (!gl) {
-      gl = canvas.getContext('webgl', contextAttributes) ||
-           canvas.getContext('experimental-webgl', contextAttributes);
+      gl = (canvas.getContext('webgl', contextAttributes) ||
+           canvas.getContext('experimental-webgl', contextAttributes)) as WebGLRenderingContext | null;
     }
 
     if (!gl) {

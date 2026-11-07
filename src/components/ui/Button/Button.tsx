@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, type ReactNode } from 'react';
 import { motion, type HTMLMotionProps } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import styles from './Button.module.css';
@@ -55,7 +55,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={isDisabled}
         aria-busy={loading}
         aria-disabled={isDisabled}
-        style={style}
+        style={style ?? {}}
         whileHover={whileHover ?? { scale: isDisabled ? 1 : 1.02 }}
         whileTap={whileTap ?? { scale: isDisabled ? 1 : 0.98 }}
         transition={{ duration: 0.1, ease: 'easeOut' }}

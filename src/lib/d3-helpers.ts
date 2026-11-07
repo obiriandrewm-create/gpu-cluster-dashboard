@@ -1,5 +1,5 @@
 import { scaleLinear, scaleTime, scaleOrdinal, scaleQuantize, scaleSequential, interpolateRdYlGn, interpolateViridis, interpolateInferno, easeCubic, easeQuad, transition } from 'd3';
-import type { ScaleLinear, ScaleTime, ScaleOrdinal, ScaleQuantize, ScaleSequential, Transition } from 'd3';
+import type { ScaleLinear, ScaleTime, ScaleOrdinal, ScaleSequential, Transition } from 'd3';
 
 export const HEALTH_COLORS = {
   healthy: '#10B981',
@@ -54,21 +54,22 @@ export function createPowerColorScale(): ScaleSequential<string, never> {
   return scaleSequential(interpolateViridis).domain([0, 1]);
 }
 
-export function createCongestionColorScale(maxValue: number): ScaleQuantize<number, string, never> {
-  return scaleQuantize<number, string>()
-    .domain([0, maxValue])
-    .range([
-      '#F0FDF4',
-      '#DCFCE7',
-      '#BBF7D0',
-      '#86EFAC',
-      '#4ADE80',
-      '#22C55E',
-      '#16A34A',
-      '#15803D',
-      '#166534',
-      '#14532D',
-    ]);
+export function createCongestionColorScale(maxValue: number) {
+  const range = [
+    '#F0FDF4',
+    '#DCFCE7',
+    '#BBF7D0',
+    '#86EFAC',
+    '#4ADE80',
+    '#22C55E',
+    '#16A34A',
+    '#15803D',
+    '#166534',
+    '#14532D',
+  ] as Iterable<string>;
+  return scaleQuantize<string>()
+    .domain([0, maxValue] as [number, number])
+    .range(range);
 }
 
 export function createLinearScale(
@@ -88,16 +89,16 @@ export function createTimeScale(
 export function createTransition(
   duration = 300,
   ease = easeCubic
-): Transition<unknown, unknown, unknown, unknown> {
-  return transition().duration(duration).ease(ease);
+): Transition<SVGGElement, unknown, null, undefined> {
+  return transition().duration(duration).ease(ease) as any;
 }
 
 export function createStaggeredTransition(
   baseDelay = 50,
   duration = 300,
   ease = easeCubic
-): Transition<unknown, unknown, unknown, unknown> {
-  return transition().duration(duration).ease(ease).delay((_, i) => i * baseDelay);
+): Transition<SVGGElement, unknown, null, undefined> {
+  return transition().duration(duration).ease(ease).delay((_, i) => i * baseDelay) as any;
 }
 
 export const CHART_MARGINS = {
@@ -163,13 +164,12 @@ export function interpolateColor(
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-    : null;
+  if (!result) return null;
+  return {
+    r: parseInt(result[1]!, 16),
+    g: parseInt(result[2]!, 16),
+    b: parseInt(result[3]!, 16),
+  };
 }
 
 export function getContrastColor(hexColor: string): string {

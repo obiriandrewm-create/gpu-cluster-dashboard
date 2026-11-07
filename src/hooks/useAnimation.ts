@@ -13,6 +13,7 @@ interface GSAPTween {
   resume(): void;
   progress(value: number): GSAPTween;
   timeScale(value: number): GSAPTween;
+  eventCallback(type: string, callback?: () => void): GSAPTween | (() => void) | undefined;
 }
 
 interface GSAPTimeline {
@@ -38,6 +39,7 @@ interface GSAPStatic {
   killTweensOf(target: any): void;
   globalTimeline: GSAPTimeline;
   config(vars: any): void;
+  registerPlugin(plugin: any): void;
 }
 
 let gsap: GSAPStatic | null = null;
@@ -111,7 +113,7 @@ export function useAnimation(options: UseAnimationOptions = {}): UseAnimationRet
   } = options;
 
   const reducedMotion = useReducedMotion();
-  const shouldReduceMotion = respectReducedMotion && reducedMotion;
+  const shouldReduceMotion = Boolean(respectReducedMotion && reducedMotion);
   const animationRefs = useRef<Map<any, GSAPTween>>(new Map());
 
   // Animate using GSAP
@@ -297,7 +299,7 @@ export function useScrollAnimation(
   } = options;
 
   const reducedMotion = useReducedMotion();
-  const shouldReduceMotion = respectReducedMotion && reducedMotion;
+  const shouldReduceMotion = Boolean(respectReducedMotion && reducedMotion);
   const scrollTriggerRef = useRef<any>(null);
 
   const refresh = useCallback(async () => {
@@ -403,7 +405,7 @@ async function loadFlip(): Promise<any> {
 export function useFlip(options: UseFlipOptions): UseFlipReturn {
   const { targets, respectReducedMotion = true } = options;
   const reducedMotion = useReducedMotion();
-  const shouldReduceMotion = respectReducedMotion && reducedMotion;
+  const shouldReduceMotion = Boolean(respectReducedMotion && reducedMotion);
   const flipStateRef = useRef<any>(null);
 
   const record = useCallback(async () => {
@@ -459,15 +461,15 @@ export function useSpring(options: UseSpringOptions): { value: number; setTarget
   const {
     initialValue,
     targetValue,
-    stiffness = 100,
-    damping = 10,
-    mass = 1,
+    stiffness: _stiffness = 100,
+    damping: _damping = 10,
+    mass: _mass = 1,
     respectReducedMotion = true,
     onUpdate,
   } = options;
 
   const reducedMotion = useReducedMotion();
-  const shouldReduceMotion = respectReducedMotion && reducedMotion;
+  const shouldReduceMotion = Boolean(respectReducedMotion && reducedMotion);
   const [value, setValue] = useState(initialValue);
   const animationRef = useRef<GSAPTween | null>(null);
   const targetRef = useRef(targetValue);

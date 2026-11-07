@@ -33,7 +33,6 @@ export default defineConfig(({ mode }) => ({
           'vendor-d3': ['d3'],
           'vendor-three': ['three'],
           'vendor-motion': ['framer-motion', 'gsap'],
-          'chart': ['@features/gpu-heatmap', '@features/network-topology'],
         },
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
