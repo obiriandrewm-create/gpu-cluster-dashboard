@@ -1,8 +1,8 @@
 // Quality gate enforcement script
 // Runs after each check to enforce thresholds from CONSTRAINTS.md
 
-import { readFileSync, writeFileSync } from 'fs';
-import { exit } from 'process';
+import { readFileSync, } from 'node:fs';
+import { exit } from 'node:process';
 
 interface GateResult {
   pass: boolean;
@@ -108,7 +108,7 @@ function parseSizeLimitResults(filePath: string): GateResult {
     if (failures.length > 0) {
       return { pass: false, message: `Bundle size failures: ${failures.join('; ')}`, details: failures };
     }
-    return { pass: true, message: `Size-limit: all bundles within limits` };
+    return { pass: true, message: 'Size-limit: all bundles within limits' };
   } catch (e) {
     return { pass: false, message: `Failed to parse size-limit results: ${e}` };
   }
@@ -141,10 +141,7 @@ async function main() {
       console.error(`Unknown check type: ${checkType}`);
       exit(1);
   }
-  
-  console.log(result.message);
   if (!result.pass && result.details) {
-    console.log(JSON.stringify(result.details, null, 2));
   }
   
   if (!result.pass) {

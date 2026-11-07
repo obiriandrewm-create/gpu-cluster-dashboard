@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
-import { Card, CardHeader, CardContent } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { TimelineChart } from '@/components/charts/TimelineChart';
 import { ProgressRing } from '@/components/charts/ProgressRing';
+import { TimelineChart } from '@/components/charts/TimelineChart';
+import { Badge } from '@/components/ui/Badge';
+import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import type React from 'react';
+import { useMemo } from 'react';
 
 import styles from './StragglerPanel.module.css';
 
@@ -52,12 +53,16 @@ export const StragglerPanel: React.FC<StragglerPanelProps> = ({
   onDrillDown,
   className,
 }) => {
-  const timelineData = useMemo(() => straggler.timeline.map((event, _index) => ({
-    timestamp: event.timestamp,
-    value: event.score,
-    label: `${event.eventType}: ${event.details}`,
-    metadata: { eventType: event.eventType, details: event.details },
-  })), [straggler.timeline]);
+  const timelineData = useMemo(
+    () =>
+      straggler.timeline.map((event, _index) => ({
+        timestamp: event.timestamp,
+        value: event.score,
+        label: `${event.eventType}: ${event.details}`,
+        metadata: { eventType: event.eventType, details: event.details },
+      })),
+    [straggler.timeline]
+  );
 
   const getSeverityColor = (score: number) => {
     if (score >= 80) return 'var(--color-danger-500)';
@@ -68,7 +73,7 @@ export const StragglerPanel: React.FC<StragglerPanelProps> = ({
 
   return (
     <div className={styles.container}>
-      <Card variant="elevated" padding="lg" className={className}>
+      <Card variant='elevated' padding='lg' className={className}>
         <CardHeader>
           <div className={styles.header}>
             <div className={styles.gpuInfo}>
@@ -76,7 +81,7 @@ export const StragglerPanel: React.FC<StragglerPanelProps> = ({
               <span className={styles.nodeId}>Node: {straggler.nodeId}</span>
             </div>
             <div className={styles.severity}>
-              <Badge variant={severityColors[straggler.severity] ?? 'info'} dot size="md">
+              <Badge variant={severityColors[straggler.severity] ?? 'info'} dot size='md'>
                 {severityLabels[straggler.severity] ?? 'Unknown'}
               </Badge>
               <ProgressRing
@@ -86,7 +91,7 @@ export const StragglerPanel: React.FC<StragglerPanelProps> = ({
                 showValue
                 valueFormat={(v) => `${Math.round(v)}`}
                 progressColor={getSeverityColor(straggler.score)}
-                trackColor="var(--color-neutral-200)"
+                trackColor='var(--color-neutral-200)'
                 ariaLabel={`Straggler score ${Math.round(straggler.score)} out of 100`}
               />
             </div>
@@ -102,15 +107,21 @@ export const StragglerPanel: React.FC<StragglerPanelProps> = ({
           <div className={styles.metrics}>
             <div className={styles.metric}>
               <span className={styles.metricLabel}>Utilization</span>
-              <span className={styles.metricValue}>{straggler.metrics.utilization.toFixed(1)}%</span>
+              <span className={styles.metricValue}>
+                {straggler.metrics.utilization.toFixed(1)}%
+              </span>
             </div>
             <div className={styles.metric}>
               <span className={styles.metricLabel}>Memory</span>
-              <span className={styles.metricValue}>{straggler.metrics.memoryUtilization.toFixed(1)}%</span>
+              <span className={styles.metricValue}>
+                {straggler.metrics.memoryUtilization.toFixed(1)}%
+              </span>
             </div>
             <div className={styles.metric}>
               <span className={styles.metricLabel}>Temperature</span>
-              <span className={styles.metricValue}>{straggler.metrics.temperature.toFixed(0)}°C</span>
+              <span className={styles.metricValue}>
+                {straggler.metrics.temperature.toFixed(0)}°C
+              </span>
             </div>
             <div className={styles.metric}>
               <span className={styles.metricLabel}>Power Draw</span>
@@ -118,7 +129,9 @@ export const StragglerPanel: React.FC<StragglerPanelProps> = ({
             </div>
             <div className={styles.metric}>
               <span className={styles.metricLabel}>Clock Throttle</span>
-              <span className={styles.metricValue}>{straggler.metrics.clockThrottle.toFixed(1)}%</span>
+              <span className={styles.metricValue}>
+                {straggler.metrics.clockThrottle.toFixed(1)}%
+              </span>
             </div>
           </div>
 
@@ -142,23 +155,23 @@ export const StragglerPanel: React.FC<StragglerPanelProps> = ({
           <div className={styles.events}>
             <h4 className={styles.sectionTitle}>Recent Events</h4>
             <div className={styles.eventList}>
-              {straggler.timeline.slice(-5).reverse().map((event, index) => (
-                <div key={index} className={styles.event}>
-                  <span className={styles.eventTime}>
-                    {new Date(event.timestamp).toLocaleTimeString()}
-                  </span>
-                  <span className={styles.eventType}>{event.eventType}</span>
-                  <span className={styles.eventDetails}>{event.details}</span>
-                </div>
-              ))}
+              {straggler.timeline
+                .slice(-5)
+                .reverse()
+                .map((event, index) => (
+                  <div key={index} className={styles.event}>
+                    <span className={styles.eventTime}>
+                      {new Date(event.timestamp).toLocaleTimeString()}
+                    </span>
+                    <span className={styles.eventType}>{event.eventType}</span>
+                    <span className={styles.eventDetails}>{event.details}</span>
+                  </div>
+                ))}
             </div>
           </div>
 
           {onDrillDown && (
-            <button
-              className={styles.drillDownBtn}
-              onClick={() => onDrillDown(straggler.gpuId)}
-            >
+            <button className={styles.drillDownBtn} onClick={() => onDrillDown(straggler.gpuId)}>
               Drill Down →
             </button>
           )}

@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import * as d3 from 'd3';
+import type React from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import styles from './BarChart.module.css';
 
 export interface BarDataPoint {
@@ -58,35 +59,35 @@ export const BarChart: React.FC<BarChartProps> = ({
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
 
-  const xScale = useMemo(() =>
-    d3.scaleBand<string>()
-      .domain(data.map(xAccessor))
-      .range([0, innerWidth])
-      .padding(0.2),
-  [data, xAccessor, innerWidth]
+  const xScale = useMemo(
+    () => d3.scaleBand<string>().domain(data.map(xAccessor)).range([0, innerWidth]).padding(0.2),
+    [data, xAccessor, innerWidth]
   );
 
   const yScale = useMemo(() => {
     const maxVal = d3.max(data, yAccessor) ?? 1;
-    const scale = d3.scaleLinear<number, number>()
+    const scale = d3
+      .scaleLinear<number, number>()
       .domain([0, maxVal * 1.15])
       .range([innerHeight, 0])
       .nice();
     return scale;
   }, [data, yAccessor, innerHeight]);
 
-  const colorScale = useMemo(() =>
-    colorAccessor
-      ? d3.scaleOrdinal<string, string>()
-        .domain(data.map(colorAccessor))
-        .range(data.map((_, _i) => defaultColor))
-      : null,
-  [data, colorAccessor, defaultColor]
+  const colorScale = useMemo(
+    () =>
+      colorAccessor
+        ? d3
+            .scaleOrdinal<string, string>()
+            .domain(data.map(colorAccessor))
+            .range(data.map((_, _i) => defaultColor))
+        : null,
+    [data, colorAccessor, defaultColor]
   );
 
   // Helper functions with proper non-null assertions
   const getX = (key: string): string => (xScale(key) ?? 0) as unknown as string;
-  const getY = (value: number): number => (yScale(value) as number);
+  const getY = (value: number): number => yScale(value) as number;
   const getColor = (key: string): string => (colorScale?.(key) ?? defaultColor) as string;
 
   useEffect(() => {
@@ -102,8 +103,7 @@ export const BarChart: React.FC<BarChartProps> = ({
       .attr('role', 'img')
       .attr('aria-label', ariaLabel);
 
-    const g = svg.append('g')
-      .attr('transform', `translate(${margin.left},${margin.top})`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
     // Grid lines
     g.append('g')
@@ -120,7 +120,8 @@ export const BarChart: React.FC<BarChartProps> = ({
       .attr('stroke-width', 0.5);
 
     // Bars
-    const bars = g.selectAll<SVGRectElement, BarDataPoint>(`.${styles.bar as string}`)
+    const bars = g
+      .selectAll<SVGRectElement, BarDataPoint>(`.${styles.bar as string}`)
       .data(data)
       .enter()
       .append('rect')
@@ -129,7 +130,7 @@ export const BarChart: React.FC<BarChartProps> = ({
       .attr('y', animate ? innerHeight : (d) => getY(yAccessor(d)))
       .attr('width', xScale.bandwidth())
       .attr('height', animate ? 0 : (d) => innerHeight - getY(yAccessor(d)))
-      .attr('fill', (d) => colorAccessor ? getColor(colorAccessor(d)) : defaultColor)
+      .attr('fill', (d) => (colorAccessor ? getColor(colorAccessor(d)) : defaultColor))
       .attr('rx', 2)
       .attr('ry', 2)
       .style('cursor', onBarClick ? 'pointer' : 'default')
@@ -144,7 +145,8 @@ export const BarChart: React.FC<BarChartProps> = ({
       });
 
     if (animate) {
-      bars.transition()
+      bars
+        .transition()
         .duration(animationDuration)
         .delay((_, _i) => _i * 30)
         .ease(d3.easeCubicOut)
@@ -178,9 +180,7 @@ export const BarChart: React.FC<BarChartProps> = ({
     }
 
     // X Axis
-    const xAxis = d3.axisBottom<string>(xScale)
-      .tickSize(0)
-      .tickPadding(8);
+    const xAxis = d3.axisBottom<string>(xScale).tickSize(0).tickPadding(8);
 
     g.append('g')
       .attr('class', styles.xAxis as string)
@@ -208,7 +208,8 @@ export const BarChart: React.FC<BarChartProps> = ({
     }
 
     // Y Axis
-    const yAxis = d3.axisLeft<number>(yScale)
+    const yAxis = d3
+      .axisLeft<number>(yScale)
       .ticks(5)
       .tickFormat(d3.format('.2s'))
       .tickSize(-innerWidth)
@@ -237,7 +238,30 @@ export const BarChart: React.FC<BarChartProps> = ({
         .attr('font-family', 'var(--font-family-mono)')
         .text(yAxisLabel);
     }
-  }, [data, width, height, margin, innerWidth, innerHeight, xScale, yScale, colorScale, xAccessor, yAccessor, colorAccessor, defaultColor, showValues, valueFormat, xAxisLabel, yAxisLabel, onBarClick, onBarHover, animate, animationDuration, ariaLabel]);
+  }, [
+    data,
+    width,
+    height,
+    margin,
+    innerWidth,
+    innerHeight,
+    xScale,
+    yScale,
+    colorScale,
+    xAccessor,
+    yAccessor,
+    colorAccessor,
+    defaultColor,
+    showValues,
+    valueFormat,
+    xAxisLabel,
+    yAxisLabel,
+    onBarClick,
+    onBarHover,
+    animate,
+    animationDuration,
+    ariaLabel,
+  ]);
 
   const showTooltip = (bar: BarDataPoint, _event: MouseEvent) => {
     if (!tooltipRef.current) return;

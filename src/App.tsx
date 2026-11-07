@@ -1,6 +1,6 @@
+import { useEffect, useState } from 'react';
 import { GPUHeatmapCanvas } from './components/viz/GPUHeatmapCanvas';
-import { generateMockGPUCells, GPUCellData } from './lib/three-helpers';
-import { useState, useEffect } from 'react';
+import { type GPUCellData, generateMockGPUCells } from './lib/three-helpers';
 
 function App() {
   const [cells, setCells] = useState<GPUCellData[]>([]);
@@ -15,7 +15,7 @@ function App() {
       <h1>GPU Cluster Dashboard</h1>
       <GPUHeatmapCanvas
         cells={cells}
-        colorMode="health"
+        colorMode='health'
         gridWidth={32}
         gridHeight={16}
         fisheyeEnabled={true}

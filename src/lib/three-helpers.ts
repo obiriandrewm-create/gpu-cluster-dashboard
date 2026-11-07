@@ -217,7 +217,9 @@ export function createGPUInstancedMesh(config: InstancedMeshConfig): THREE.Insta
       uColorMode: { value: getColorModeIndex(colorMode) },
       uTime: { value: 0 },
       uFisheyeEnabled: { value: config.fisheyeEnabled ? 1.0 : 0.0 },
-      uFisheyeFocus: { value: new THREE.Vector2(config.fisheyeFocus?.x ?? 0.5, config.fisheyeFocus?.y ?? 0.5) },
+      uFisheyeFocus: {
+        value: new THREE.Vector2(config.fisheyeFocus?.x ?? 0.5, config.fisheyeFocus?.y ?? 0.5),
+      },
       uFisheyeRadius: { value: config.fisheyeRadius ?? 0.3 },
       uFisheyeStrength: { value: config.fisheyeStrength ?? 2.0 },
       uGridSize: { value: new THREE.Vector2(gridWidth, gridHeight) },
@@ -363,23 +365,27 @@ export function updateGPUInstancedMesh(
   for (let i = 0; i < count; i++) {
     const cell = cells[i];
     if (!cell) continue;
-    
+
     // Calculate world position from grid position
     const x = (cell.gridX - (gridWidth - 1) / 2) * (cellSize + cellGap);
     const y = ((gridHeight - 1) / 2 - cell.gridY) * (cellSize + cellGap);
-    
+
     dummy.position.set(x, y, 0);
     dummy.rotation.set(0, 0, 0);
     dummy.scale.set(1, 1, 1);
     dummy.updateMatrix();
-    
+
     mesh.setMatrixAt(i, dummy.matrix);
 
     // Set color based on mode
-    const value = colorMode === 'health' ? cell.health : 
-                  colorMode === 'utilization' ? cell.utilization : cell.temperature;
+    const value =
+      colorMode === 'health'
+        ? cell.health
+        : colorMode === 'utilization'
+          ? cell.utilization
+          : cell.temperature;
     color.setHSL((1.0 - value) * 0.35, 0.8, 0.5); // Green to red gradient
-    
+
     const colorArray = mesh.instanceColor?.array as Float32Array;
     if (colorArray) {
       colorArray[i * 4 + 0] = color.r;
@@ -389,9 +395,13 @@ export function updateGPUInstancedMesh(
     }
 
     // Update straggler attributes
-    const stragglerAttr = mesh.geometry.getAttribute('instanceStraggler') as THREE.InstancedBufferAttribute;
-    const severityAttr = mesh.geometry.getAttribute('instanceStragglerSeverity') as THREE.InstancedBufferAttribute;
-    
+    const stragglerAttr = mesh.geometry.getAttribute(
+      'instanceStraggler'
+    ) as THREE.InstancedBufferAttribute;
+    const severityAttr = mesh.geometry.getAttribute(
+      'instanceStragglerSeverity'
+    ) as THREE.InstancedBufferAttribute;
+
     if (stragglerAttr && severityAttr) {
       stragglerAttr.setX(i, cell.isStraggler ? 1.0 : 0.0);
       severityAttr.setX(i, cell.stragglerSeverity);
@@ -417,10 +427,14 @@ export function updateGPUInstancedMesh(
  */
 function getColorModeIndex(mode: 'health' | 'utilization' | 'temperature'): number {
   switch (mode) {
-    case 'health': return 0;
-    case 'utilization': return 1;
-    case 'temperature': return 2;
-    default: return 0;
+    case 'health':
+      return 0;
+    case 'utilization':
+      return 1;
+    case 'temperature':
+      return 2;
+    default:
+      return 0;
   }
 }
 
@@ -461,7 +475,7 @@ export function pickGPUCell(
   ndc: THREE.Vector2
 ): { index: number; point: THREE.Vector3 } | null {
   raycaster.setFromCamera(ndc, camera);
-  
+
   const intersects = raycaster.intersectObject(mesh, false);
   if (intersects.length > 0) {
     const intersect = intersects[0];
@@ -487,7 +501,7 @@ export function disposeThreeResources(
     mesh.geometry.dispose();
     if (mesh.material) {
       if (Array.isArray(mesh.material)) {
-        mesh.material.forEach(m => m.dispose());
+        mesh.material.forEach((m) => m.dispose());
       } else {
         mesh.material.dispose();
       }
@@ -500,7 +514,7 @@ export function disposeThreeResources(
         object.geometry.dispose();
         if (object.material) {
           if (Array.isArray(object.material)) {
-            object.material.forEach(m => m.dispose());
+            object.material.forEach((m) => m.dispose());
           } else {
             object.material.dispose();
           }
@@ -513,7 +527,7 @@ export function disposeThreeResources(
     renderer.dispose();
     renderer.forceContextLoss();
     const canvas = renderer.domElement;
-    if (canvas && canvas.parentElement) {
+    if (canvas?.parentElement) {
       canvas.parentElement.removeChild(canvas);
     }
   }
@@ -522,7 +536,10 @@ export function disposeThreeResources(
 /**
  * Calculates optimal grid dimensions for a given GPU count
  */
-export function calculateGridDimensions(gpuCount: number, aspectRatio: number): { width: number; height: number } {
+export function calculateGridDimensions(
+  gpuCount: number,
+  aspectRatio: number
+): { width: number; height: number } {
   // Aim for roughly square cells, respecting aspect ratio
   const targetCells = Math.ceil(Math.sqrt(gpuCount * aspectRatio));
   const width = Math.min(targetCells, gpuCount);
@@ -539,20 +556,20 @@ export function generateMockGPUCells(
   _gridHeight: number
 ): GPUCellData[] {
   const cells: GPUCellData[] = [];
-  
+
   for (let i = 0; i < count; i++) {
     const gridX = i % gridWidth;
     const gridY = Math.floor(i / gridWidth);
-    
+
     // Generate somewhat realistic distributions
     const health = 0.3 + Math.random() * 0.7; // 0.3-1.0
     const utilization = Math.random() * 0.8; // 0-0.8
     const temperature = 0.2 + Math.random() * 0.6; // 0.2-0.8
-    
+
     // Some GPUs are stragglers
     const isStraggler = Math.random() < 0.05; // 5% stragglers
     const stragglerSeverity = isStraggler ? 0.3 + Math.random() * 0.7 : 0;
-    
+
     cells.push({
       index: i,
       gridX,
@@ -566,6 +583,6 @@ export function generateMockGPUCells(
       nodeId: `node-${Math.floor(i / 8)}`,
     });
   }
-  
+
   return cells;
 }

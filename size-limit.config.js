@@ -1,6 +1,6 @@
-import { defineConfig } from 'size-limit';
-import { presetSmallLib } from '@size-limit/preset-small-lib';
 import { presetBigLib } from '@size-limit/preset-big-lib';
+import { presetSmallLib } from '@size-limit/preset-small-lib';
+import { defineConfig } from 'size-limit';
 
 export default defineConfig([
   {

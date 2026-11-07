@@ -1,5 +1,5 @@
-import React from 'react';
 import { cn } from '@/lib/utils';
+import type React from 'react';
 import styles from './Badge.module.css';
 
 export type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info';
@@ -20,16 +20,10 @@ export const Badge: React.FC<BadgeProps> = ({
   ...props
 }) => (
   <span
-    className={cn(
-      styles.badge,
-      styles[variant],
-      styles[size],
-      dot && styles.dot,
-      className
-    )}
+    className={cn(styles.badge, styles[variant], styles[size], dot && styles.dot, className)}
     {...props}
   >
-    {dot && <span className={styles.dotIndicator} aria-hidden="true" />}
+    {dot && <span className={styles.dotIndicator} aria-hidden='true' />}
     {children}
   </span>
 );

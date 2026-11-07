@@ -3,20 +3,20 @@
  * Handles scene creation, resize, animation loop, and cleanup
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react';
-import * as THREE from 'three';
 import {
-  createRenderer,
-  createOrthographicCamera,
-  createScene,
+  type GPUCellData,
+  type InstancedMeshConfig,
+  type ThreeSceneConfig,
   createGPUInstancedMesh,
-  updateGPUInstancedMesh,
-  disposeThreeResources,
   createGPURaycaster,
-  GPUCellData,
-  InstancedMeshConfig,
-  ThreeSceneConfig,
+  createOrthographicCamera,
+  createRenderer,
+  createScene,
+  disposeThreeResources,
+  updateGPUInstancedMesh,
 } from '@/lib/three-helpers';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import * as THREE from 'three';
 
 export interface UseThreeSceneOptions {
   /** Canvas ref */
@@ -73,7 +73,12 @@ export interface UseThreeSceneReturn {
   /** Update color mode */
   updateColorMode: (mode: 'health' | 'utilization' | 'temperature') => void;
   /** Update fisheye settings */
-  updateFisheye: (enabled: boolean, focus?: { x: number; y: number }, radius?: number, strength?: number) => void;
+  updateFisheye: (
+    enabled: boolean,
+    focus?: { x: number; y: number },
+    radius?: number,
+    strength?: number
+  ) => void;
   /** Raycaster for picking */
   raycaster: THREE.Raycaster | null;
 }
@@ -121,10 +126,10 @@ export function useThreeScene(options: UseThreeSceneOptions): UseThreeSceneRetur
   // Check for prefers-reduced-motion
   useEffect(() => {
     if (!respectReducedMotion) return;
-    
+
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     reducedMotionRef.current = mediaQuery.matches;
-    
+
     const handler = (event: MediaQueryListEvent) => {
       reducedMotionRef.current = event.matches;
       if (event.matches && isRunningRef.current) {
@@ -133,7 +138,7 @@ export function useThreeScene(options: UseThreeSceneOptions): UseThreeSceneRetur
         start();
       }
     };
-    
+
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
   }, [respectReducedMotion, autoStart]);
@@ -213,56 +218,59 @@ export function useThreeScene(options: UseThreeSceneOptions): UseThreeSceneRetur
   ]);
 
   // Animation loop
-  const animate = useCallback((time: number) => {
-    if (!isRunningRef.current) return;
-    
-    // Check reduced motion
-    if (reducedMotionRef.current) {
-      stop();
-      return;
-    }
+  const animate = useCallback(
+    (time: number) => {
+      if (!isRunningRef.current) return;
 
-    const delta = (time - lastTimeRef.current) / 1000;
-    lastTimeRef.current = time;
-
-    // Update FPS counter
-    frameCountRef.current++;
-    if (time - fpsUpdateTimeRef.current >= 1000) {
-      fpsRef.current = frameCountRef.current;
-      setFps(frameCountRef.current);
-      frameCountRef.current = 0;
-      fpsUpdateTimeRef.current = time;
-    }
-
-    // Update shader time uniform
-    const mesh = meshRef.current;
-    if (mesh && mesh.material) {
-      const material = mesh.material as THREE.ShaderMaterial;
-      if (material.uniforms.uTime) {
-        material.uniforms.uTime.value = time * 0.001;
+      // Check reduced motion
+      if (reducedMotionRef.current) {
+        stop();
+        return;
       }
-      if (material.uniforms.uStragglerHighlight) {
-        material.uniforms.uStragglerHighlight.value = time * 0.001;
+
+      const delta = (time - lastTimeRef.current) / 1000;
+      lastTimeRef.current = time;
+
+      // Update FPS counter
+      frameCountRef.current++;
+      if (time - fpsUpdateTimeRef.current >= 1000) {
+        fpsRef.current = frameCountRef.current;
+        setFps(frameCountRef.current);
+        frameCountRef.current = 0;
+        fpsUpdateTimeRef.current = time;
       }
-    }
 
-    // Call custom animation callback
-    if (onAnimationFrame) {
-      onAnimationFrame(delta);
-    }
+      // Update shader time uniform
+      const mesh = meshRef.current;
+      if (mesh?.material) {
+        const material = mesh.material as THREE.ShaderMaterial;
+        if (material.uniforms.uTime) {
+          material.uniforms.uTime.value = time * 0.001;
+        }
+        if (material.uniforms.uStragglerHighlight) {
+          material.uniforms.uStragglerHighlight.value = time * 0.001;
+        }
+      }
 
-    // Render
-    const renderer = rendererRef.current;
-    const scene = sceneRef.current;
-    const camera = cameraRef.current;
-    
-    if (renderer && scene && camera) {
-      renderer.render(scene, camera);
-    }
+      // Call custom animation callback
+      if (onAnimationFrame) {
+        onAnimationFrame(delta);
+      }
 
-    // Continue animation loop
-    animationIdRef.current = requestAnimationFrame(animate);
-  }, [onAnimationFrame]);
+      // Render
+      const renderer = rendererRef.current;
+      const scene = sceneRef.current;
+      const camera = cameraRef.current;
+
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+
+      // Continue animation loop
+      animationIdRef.current = requestAnimationFrame(animate);
+    },
+    [onAnimationFrame]
+  );
 
   // Start animation loop
   const start = useCallback(() => {
@@ -287,14 +295,14 @@ export function useThreeScene(options: UseThreeSceneOptions): UseThreeSceneRetur
   const resize = useCallback((newWidth: number, newHeight: number) => {
     const renderer = rendererRef.current;
     const camera = cameraRef.current;
-    
+
     if (renderer && camera) {
       renderer.setSize(newWidth, newHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      
+
       const aspect = newWidth / newHeight;
       const frustumSize = 100;
-      
+
       camera.left = (-frustumSize * aspect) / 2;
       camera.right = (frustumSize * aspect) / 2;
       camera.top = frustumSize / 2;
@@ -304,25 +312,20 @@ export function useThreeScene(options: UseThreeSceneOptions): UseThreeSceneRetur
   }, []);
 
   // Update cells
-  const updateCells = useCallback((newCells: GPUCellData[]) => {
-    const mesh = meshRef.current;
-    if (mesh) {
-      updateGPUInstancedMesh(
-        mesh,
-        newCells,
-        colorMode,
-        gridWidth,
-        gridHeight,
-        cellSize,
-        cellGap
-      );
-    }
-  }, [colorMode, gridWidth, gridHeight, cellSize, cellGap]);
+  const updateCells = useCallback(
+    (newCells: GPUCellData[]) => {
+      const mesh = meshRef.current;
+      if (mesh) {
+        updateGPUInstancedMesh(mesh, newCells, colorMode, gridWidth, gridHeight, cellSize, cellGap);
+      }
+    },
+    [colorMode, gridWidth, gridHeight, cellSize, cellGap]
+  );
 
   // Update color mode
   const updateColorMode = useCallback((mode: 'health' | 'utilization' | 'temperature') => {
     const mesh = meshRef.current;
-    if (mesh && mesh.material) {
+    if (mesh?.material) {
       const material = mesh.material as THREE.ShaderMaterial;
       if (material.uniforms.uColorMode) {
         // 0 = health, 1 = utilization, 2 = temperature
@@ -333,34 +336,32 @@ export function useThreeScene(options: UseThreeSceneOptions): UseThreeSceneRetur
   }, []);
 
   // Update fisheye settings
-  const updateFisheye = useCallback((
-    enabled: boolean,
-    focus?: { x: number; y: number },
-    radius?: number,
-    strength?: number
-  ) => {
-    const mesh = meshRef.current;
-    if (mesh && mesh.material) {
-      const material = mesh.material as THREE.ShaderMaterial;
-      if (material.uniforms.uFisheyeEnabled) {
-        material.uniforms.uFisheyeEnabled.value = enabled ? 1.0 : 0.0;
+  const updateFisheye = useCallback(
+    (enabled: boolean, focus?: { x: number; y: number }, radius?: number, strength?: number) => {
+      const mesh = meshRef.current;
+      if (mesh?.material) {
+        const material = mesh.material as THREE.ShaderMaterial;
+        if (material.uniforms.uFisheyeEnabled) {
+          material.uniforms.uFisheyeEnabled.value = enabled ? 1.0 : 0.0;
+        }
+        if (focus && material.uniforms.uFisheyeFocus) {
+          material.uniforms.uFisheyeFocus.value.set(focus.x, focus.y);
+        }
+        if (radius !== undefined && material.uniforms.uFisheyeRadius) {
+          material.uniforms.uFisheyeRadius.value = radius;
+        }
+        if (strength !== undefined && material.uniforms.uFisheyeStrength) {
+          material.uniforms.uFisheyeStrength.value = strength;
+        }
       }
-      if (focus && material.uniforms.uFisheyeFocus) {
-        material.uniforms.uFisheyeFocus.value.set(focus.x, focus.y);
-      }
-      if (radius !== undefined && material.uniforms.uFisheyeRadius) {
-        material.uniforms.uFisheyeRadius.value = radius;
-      }
-      if (strength !== undefined && material.uniforms.uFisheyeStrength) {
-        material.uniforms.uFisheyeStrength.value = strength;
-      }
-    }
-  }, []);
+    },
+    []
+  );
 
   // Initialize on mount and when key dependencies change
   useEffect(() => {
     initialize();
-    
+
     return () => {
       stop();
       disposeThreeResources(

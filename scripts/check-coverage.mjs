@@ -1,9 +1,9 @@
 // Check coverage for changed lines only
 // Reads lcov and intersects with git diff
 
-import { readFileSync, writeFileSync } from 'fs';
-import { execSync } from 'child_process';
-import { exit } from 'process';
+import { execSync } from 'node:child_process';
+import { readFileSync, } from 'node:fs';
+import { exit } from 'node:process';
 
 interface CoverageData {
   lines: { [file: string]: { [line: number]: number } };
@@ -42,8 +42,8 @@ function parseDiffLines(diff: string): number[] {
   for (const hunk of hunks) {
     const match = hunk.match(/^\+(\d+)(?:,(\d+))?/);
     if (match) {
-      const start = parseInt(match[1], 10);
-      const count = match[2] ? parseInt(match[2], 10) : 1;
+      const start = Number.parseInt(match[1], 10);
+      const count = match[2] ? Number.parseInt(match[2], 10) : 1;
       for (let i = 0; i < count; i++) {
         lines.push(start + i);
       }
@@ -64,7 +64,7 @@ function parseLcov(filePath: string): CoverageData {
       lines[currentFile] = {};
     } else if (line.startsWith('DA:') && currentFile) {
       const [, lineNum, hits] = line.split(',');
-      lines[currentFile][parseInt(lineNum, 10)] = parseInt(hits, 10);
+      lines[currentFile][Number.parseInt(lineNum, 10)] = Number.parseInt(hits, 10);
     }
   }
   
@@ -73,7 +73,7 @@ function parseLcov(filePath: string): CoverageData {
 
 function main() {
   const lcovPath = process.argv[2] || 'coverage/lcov.info';
-  const threshold = parseFloat(process.env.COVERAGE_THRESHOLD || '0.8');
+  const threshold = Number.parseFloat(process.env.COVERAGE_THRESHOLD || '0.8');
   
   const changedLines = getChangedLines();
   const coverage = parseLcov(lcovPath);
@@ -98,17 +98,10 @@ function main() {
   const coveragePercent = totalChanged > 0 ? coveredChanged / totalChanged : 1;
   const passed = coveragePercent >= threshold;
   
-  console.log(`Changed lines coverage: ${(coveragePercent * 100).toFixed(2)}% (${coveredChanged}/${totalChanged})`);
-  console.log(`Threshold: ${(threshold * 100).toFixed(0)}%`);
-  console.log(passed ? 'PASSED' : 'FAILED');
-  
   if (!passed && uncoveredFiles.length > 0) {
-    console.log('\nUncovered changed lines (first 20):');
-    for (const u of uncoveredFiles.slice(0, 20)) {
-      console.log(`  ${u}`);
+    for (const _u of uncoveredFiles.slice(0, 20)) {
     }
     if (uncoveredFiles.length > 20) {
-      console.log(`  ... and ${uncoveredFiles.length - 20} more`);
     }
   }
   

@@ -7,8 +7,8 @@
    LIGHT THEME (Default)
    ============================================ */
 
-[data-theme='light'],
-:root:not([data-theme='dark']):not([data-theme='high-contrast']) {
+[data-theme="light"],
+:root:not([data-theme="dark"]):not([data-theme="high-contrast"]) {
   /* Surface */
   --color-surface-primary: var(--color-neutral-0);
   --color-surface-secondary: var(--color-neutral-50);
@@ -58,7 +58,7 @@
    DARK THEME
    ============================================ */
 
-[data-theme='dark'] {
+[data-theme="dark"] {
   /* Surface */
   --color-surface-primary: var(--color-neutral-950);
   --color-surface-secondary: var(--color-neutral-900);
@@ -153,7 +153,7 @@
    HIGH CONTRAST THEME
    ============================================ */
 
-[data-theme='high-contrast'] {
+[data-theme="high-contrast"] {
   /* Surface - Maximum contrast */
   --color-surface-primary: #000000;
   --color-surface-secondary: #1a1a1a;
@@ -278,14 +278,14 @@
 
   /* Buttons in forced colors */
   button,
-  [role='button'] {
+  [role="button"] {
     border: 1px solid CanvasText;
     background: Canvas;
     color: CanvasText;
   }
 
   button:hover,
-  [role='button']:hover {
+  [role="button"]:hover {
     background: Highlight;
     color: HighlightText;
   }
@@ -321,7 +321,7 @@
    ============================================ */
 
 @media (prefers-color-scheme: dark) {
-  :root[data-theme='auto'] {
+  :root[data-theme="auto"] {
     /* Surface */
     --color-surface-primary: var(--color-neutral-950);
     --color-surface-secondary: var(--color-neutral-900);
@@ -369,7 +369,7 @@
 }
 
 @media (prefers-color-scheme: light) {
-  :root[data-theme='auto'] {
+  :root[data-theme="auto"] {
     /* Surface */
     --color-surface-primary: var(--color-neutral-0);
     --color-surface-secondary: var(--color-neutral-50);
@@ -421,10 +421,9 @@
    ============================================ */
 
 * {
-  transition: background-color var(--duration-normal) var(--ease-out),
-              border-color var(--duration-normal) var(--ease-out),
-              color var(--duration-normal) var(--ease-out),
-              box-shadow var(--duration-normal) var(--ease-out);
+  transition: background-color var(--duration-normal) var(--ease-out), border-color
+    var(--duration-normal) var(--ease-out), color var(--duration-normal) var(--ease-out), box-shadow
+    var(--duration-normal) var(--ease-out);
 }
 
 /* Disable transitions during theme switch for instant feedback */
@@ -657,7 +656,7 @@
    GPU/CLUSTER SPECIFIC THEME OVERRIDES
    ============================================ */
 
-[data-theme='dark'] {
+[data-theme="dark"] {
   /* GPU status colors for dark theme */
   --color-gpu-idle: var(--color-success-400);
   --color-gpu-low: var(--color-info-400);
@@ -674,7 +673,7 @@
   --color-network-down: var(--color-error-600);
 }
 
-[data-theme='high-contrast'] {
+[data-theme="high-contrast"] {
   /* GPU status colors for high contrast */
   --color-gpu-idle: #44ff44;
   --color-gpu-low: #44aaff;

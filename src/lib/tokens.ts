@@ -212,7 +212,8 @@ export const typography = {
   fontFamily: {
     sans: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
     mono: "'JetBrains Mono', 'Fira Code', 'SF Mono', Monaco, Consolas, monospace",
-    display: "'Cal Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    display:
+      "'Cal Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   },
   fontSize: {
     xs: '0.75rem',
@@ -445,7 +446,7 @@ export const tokens = {
    ============================================ */
 
 export type ColorToken = keyof typeof colors;
-export type ColorScaleToken<T extends ColorToken> = keyof typeof colors[T];
+export type ColorScaleToken<T extends ColorToken> = keyof (typeof colors)[T];
 export type SpacingToken = keyof typeof spacing & string;
 export type FontSizeToken = keyof typeof typography.fontSize;
 export type FontWeightToken = keyof typeof typography.fontWeight;
@@ -470,10 +471,12 @@ export const cssVars = {
     warning: (scale: ColorScaleToken<'warning'>) => `var(--color-warning-${scale})`,
     danger: (scale: ColorScaleToken<'danger'>) => `var(--color-error-${scale})`,
     info: (scale: ColorScaleToken<'info'>) => `var(--color-info-${scale})`,
-    surface: (variant: 'primary' | 'secondary' | 'tertiary' | 'inverse' | 'hover' | 'active' | 'disabled') =>
-      `var(--color-surface-${variant})`,
-    text: (variant: 'primary' | 'secondary' | 'tertiary' | 'inverse' | 'link' | 'link-hover' | 'disabled') =>
-      `var(--color-text-${variant})`,
+    surface: (
+      variant: 'primary' | 'secondary' | 'tertiary' | 'inverse' | 'hover' | 'active' | 'disabled'
+    ) => `var(--color-surface-${variant})`,
+    text: (
+      variant: 'primary' | 'secondary' | 'tertiary' | 'inverse' | 'link' | 'link-hover' | 'disabled'
+    ) => `var(--color-text-${variant})`,
     border: (variant: 'primary' | 'secondary' | 'focus' | 'error' | 'success' | 'warning') =>
       `var(--color-border-${variant})`,
     gpu: (status: 'idle' | 'low' | 'medium' | 'high' | 'critical' | 'offline' | 'unknown') =>
@@ -499,10 +502,7 @@ export const cssVars = {
    UTILITY FUNCTIONS
    ============================================ */
 
-export function getColorToken(
-  category: ColorToken,
-  scale: ColorScaleToken<ColorToken>
-): string {
+export function getColorToken(category: ColorToken, scale: ColorScaleToken<ColorToken>): string {
   const categoryTokens = colors[category] as Record<string, string>;
   return categoryTokens[scale] ?? '';
 }

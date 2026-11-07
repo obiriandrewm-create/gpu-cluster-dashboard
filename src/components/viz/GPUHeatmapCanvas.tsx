@@ -3,14 +3,14 @@
  * Renders 100K+ GPU cells at 60fps using instanced rendering
  */
 
-import React, { useRef, useEffect, useCallback, useState, useImperativeHandle } from 'react';
+import { useAnimation } from '@/hooks/useAnimation';
 import {
-  useThreeScene,
-  GPUCellData,
+  type GPUCellData,
   getNormalizedCoords,
   pickGPUCell,
+  useThreeScene,
 } from '@/hooks/useThreeScene';
-import { useAnimation } from '@/hooks/useAnimation';
+import React, { useRef, useEffect, useCallback, useState, useImperativeHandle } from 'react';
 import styles from './GPUHeatmapCanvas.module.css';
 
 export interface GPUHeatmapCanvasProps {
@@ -74,19 +74,19 @@ const DEFAULT_LEGEND_LABELS = {
  */
 const COLOR_STOPS = {
   health: [
-    { offset: 0, color: '#ef4444' },    // Red - critical
-    { offset: 0.5, color: '#f59e0b' },  // Yellow - degraded
-    { offset: 1, color: '#22c55e' },    // Green - healthy
+    { offset: 0, color: '#ef4444' }, // Red - critical
+    { offset: 0.5, color: '#f59e0b' }, // Yellow - degraded
+    { offset: 1, color: '#22c55e' }, // Green - healthy
   ],
   utilization: [
-    { offset: 0, color: '#22c55e' },    // Green - idle
-    { offset: 0.5, color: '#f59e0b' },  // Yellow - medium
-    { offset: 1, color: '#ef4444' },    // Red - high
+    { offset: 0, color: '#22c55e' }, // Green - idle
+    { offset: 0.5, color: '#f59e0b' }, // Yellow - medium
+    { offset: 1, color: '#ef4444' }, // Red - high
   ],
   temperature: [
-    { offset: 0, color: '#3b82f6' },    // Blue - cool
-    { offset: 0.5, color: '#f59e0b' },  // Yellow - warm
-    { offset: 1, color: '#ef4444' },    // Red - hot
+    { offset: 0, color: '#3b82f6' }, // Blue - cool
+    { offset: 0.5, color: '#f59e0b' }, // Yellow - warm
+    { offset: 1, color: '#ef4444' }, // Red - hot
   ],
 };
 
@@ -123,7 +123,7 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
 
     // Expose container element via forwarded ref
     useImperativeHandle(ref, () => containerRef.current as HTMLDivElement, []);
-    
+
     const [hoveredGPU, setHoveredGPU] = useState<GPUCellData | null>(null);
     const [hoverScreenPos, setHoverScreenPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -137,12 +137,16 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
 
     // Calculate grid dimensions to fit container
     const { width: containerWidth, height: containerHeight } = containerSize;
+    
+    // Use fallback dimensions immediately so Three.js initializes
+    const effectiveWidth = containerWidth > 0 ? containerWidth : 800;
+    const effectiveHeight = containerHeight > 0 ? containerHeight : 600;
 
-    // Use Three.js scene hook
+    // Use Three.js scene hook with effective dimensions
     const threeScene = useThreeScene({
       canvasRef,
-      width: containerWidth,
-      height: containerHeight,
+      width: effectiveWidth,
+      height: effectiveHeight,
       cells,
       colorMode,
       gridWidth,
@@ -167,6 +171,7 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
         setContainerSize({ width: rect.width, height: rect.height });
       };
 
+      // Force initial size
       updateSize();
 
       const observer = new ResizeObserver(updateSize);
@@ -177,38 +182,36 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
 
     // Update Three.js scene when container size changes
     useEffect(() => {
-      if (containerWidth > 0 && containerHeight > 0) {
+      if (threeScene && containerWidth > 0 && containerHeight > 0) {
         threeScene.resize(containerWidth, containerHeight);
       }
     }, [containerWidth, containerHeight, threeScene]);
 
     // Handle mouse move for hover/tooltip
-    const handleMouseMove = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current;
-      if (!canvas || !threeScene.raycaster || !threeScene.camera || !threeScene.mesh) return;
+    const handleMouseMove = useCallback(
+      (event: React.MouseEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        if (!canvas || !threeScene || !threeScene.raycaster || !threeScene.camera || !threeScene.mesh) return;
 
-      const clientX = event.clientX;
-      const clientY = event.clientY;
-      
-      setHoverScreenPos({ x: clientX, y: clientY });
+        const clientX = event.clientX;
+        const clientY = event.clientY;
 
-      const ndc = getNormalizedCoords(clientX, clientY, canvas);
-      const picked = pickGPUCell(
-        threeScene.raycaster,
-        threeScene.camera,
-        threeScene.mesh,
-        ndc
-      );
+        setHoverScreenPos({ x: clientX, y: clientY });
 
-      if (picked && picked.index >= 0 && picked.index < cells.length) {
-        const gpu = cells[picked.index] as GPUCellData;
-        setHoveredGPU(gpu);
-        onGPUHover?.(gpu, { x: clientX, y: clientY });
-      } else {
-        setHoveredGPU(null);
-        onGPUHover?.(null, { x: clientX, y: clientY });
-      }
-    }, [cells, threeScene, onGPUHover]);
+        const ndc = getNormalizedCoords(clientX, clientY, canvas);
+        const picked = pickGPUCell(threeScene.raycaster, threeScene.camera, threeScene.mesh, ndc);
+
+        if (picked && picked.index >= 0 && picked.index < cells.length) {
+          const gpu = cells[picked.index] as GPUCellData;
+          setHoveredGPU(gpu);
+          onGPUHover?.(gpu, { x: clientX, y: clientY });
+        } else {
+          setHoveredGPU(null);
+          onGPUHover?.(null, { x: clientX, y: clientY });
+        }
+      },
+      [cells, threeScene, onGPUHover]
+    );
 
     // Handle mouse leave
     const handleMouseLeave = useCallback(() => {
@@ -217,61 +220,71 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
     }, [onGPUHover, hoverScreenPos]);
 
     // Handle click
-    const handleClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current;
-      if (!canvas || !threeScene.raycaster || !threeScene.camera || !threeScene.mesh) return;
+    const handleClick = useCallback(
+      (event: React.MouseEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        if (!canvas || !threeScene || !threeScene.raycaster || !threeScene.camera || !threeScene.mesh) return;
 
-      const ndc = getNormalizedCoords(event.clientX, event.clientY, canvas);
-      const picked = pickGPUCell(
-        threeScene.raycaster,
-        threeScene.camera,
-        threeScene.mesh,
-        ndc
-      );
+        const ndc = getNormalizedCoords(event.clientX, event.clientY, canvas);
+        const picked = pickGPUCell(threeScene.raycaster, threeScene.camera, threeScene.mesh, ndc);
 
-      if (picked && picked.index >= 0 && picked.index < cells.length) {
-        const gpu = cells[picked.index] as GPUCellData;
-        onGPUClick?.(gpu, { x: event.clientX, y: event.clientY });
-      }
-    }, [cells, threeScene, onGPUClick]);
+        if (picked && picked.index >= 0 && picked.index < cells.length) {
+          const gpu = cells[picked.index] as GPUCellData;
+          onGPUClick?.(gpu, { x: event.clientX, y: event.clientY });
+        }
+      },
+      [cells, threeScene, onGPUClick]
+    );
 
     // Handle wheel for zoom
-    const handleWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
-      if (!enableZoomPan) return;
-      event.preventDefault();
+    const handleWheel = useCallback(
+      (event: React.WheelEvent<HTMLDivElement>) => {
+        if (!enableZoomPan) return;
+        event.preventDefault();
 
-      const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.max(minZoom, Math.max(maxZoom, zoom * zoomFactor));
-      setZoom(newZoom);
-    }, [enableZoomPan, zoom, minZoom, maxZoom]);
+        const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
+        const newZoom = Math.max(minZoom, Math.max(maxZoom, zoom * zoomFactor));
+        setZoom(newZoom);
+      },
+      [enableZoomPan, zoom, minZoom, maxZoom]
+    );
 
     // Handle pan start
-    const handlePanStart = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-      if (!enableZoomPan) return;
-      if (event.button !== 1 && event.button !== 0) return; // Middle or left click
-      
-      setIsPanning(true);
-      setPanStart({ x: event.clientX, y: event.clientY });
-      event.preventDefault();
-    }, [enableZoomPan]);
+    const handlePanStart = useCallback(
+      (event: React.MouseEvent<HTMLDivElement>) => {
+        if (!enableZoomPan) return;
+        if (event.button !== 1 && event.button !== 0) return; // Middle or left click
+
+        setIsPanning(true);
+        setPanStart({ x: event.clientX, y: event.clientY });
+        event.preventDefault();
+      },
+      [enableZoomPan]
+    );
 
     // Handle pan move (native event for window listeners)
-    const handlePanMoveNative = useCallback((event: MouseEvent) => {
-      if (!isPanning || !enableZoomPan) return;
-      
-      const dx = (event.clientX - panStart.x) / containerWidth * zoom;
-      const dy = (event.clientY - panStart.y) / containerHeight * zoom;
-      
-      setPan(prev => ({
-        x: prev.x - dx,
-        y: prev.y - dy,
-      }));
-    }, [isPanning, enableZoomPan, containerWidth, containerHeight, zoom, panStart]);
+    const handlePanMoveNative = useCallback(
+      (event: MouseEvent) => {
+        if (!isPanning || !enableZoomPan) return;
+
+        const dx = ((event.clientX - panStart.x) / containerWidth) * zoom;
+        const dy = ((event.clientY - panStart.y) / containerHeight) * zoom;
+
+        setPan((prev) => ({
+          x: prev.x - dx,
+          y: prev.y - dy,
+        }));
+      },
+      [isPanning, enableZoomPan, containerWidth, containerHeight, zoom, panStart]
+    );
 
     // Handle pan move (React event for onMouseMove)
-    const handlePanMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-      handlePanMoveNative(event.nativeEvent);
-    }, [handlePanMoveNative]);
+    const handlePanMove = useCallback(
+      (event: React.MouseEvent<HTMLDivElement>) => {
+        handlePanMoveNative(event.nativeEvent);
+      },
+      [handlePanMoveNative]
+    );
 
     // Handle pan end (native event for window listeners)
     const handlePanEndNative = useCallback(() => {
@@ -314,7 +327,7 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
 
       const stops = COLOR_STOPS[colorMode];
       const gradient = ctx.createLinearGradient(0, 0, width, 0);
-      stops.forEach(stop => {
+      stops.forEach((stop) => {
         gradient.addColorStop(stop.offset, stop.color);
       });
 
@@ -328,15 +341,17 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
       ctx.fillText(legendLabels[colorMode].min, 0, height + 14);
       ctx.textAlign = 'right';
       ctx.fillText(legendLabels[colorMode].max, width, height + 14);
-
     }, [colorMode, showLegend, legendLabels]);
 
     // Get color mode display name
     const getColorModeLabel = () => {
       switch (colorMode) {
-        case 'health': return 'Health';
-        case 'utilization': return 'Utilization';
-        case 'temperature': return 'Temperature';
+        case 'health':
+          return 'Health';
+        case 'utilization':
+          return 'Utilization';
+        case 'temperature':
+          return 'Temperature';
       }
     };
 
@@ -363,9 +378,9 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
             transition: reducedMotion ? 'none' : 'transform 0.1s ease-out',
           }}
           aria-label={`GPU Heatmap - ${getColorModeLabel()} view`}
-          role="img"
+          role='img'
         />
-        
+
         {/* Tooltip */}
         {hoveredGPU && tooltipRef.current && (
           <div
@@ -375,7 +390,7 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
               left: hoverScreenPos.x + 16,
               top: hoverScreenPos.y + 16,
             }}
-            role="tooltip"
+            role='tooltip'
           >
             <div className={styles.tooltipRow}>
               <span className={styles.tooltipLabel}>GPU:</span>
@@ -391,16 +406,22 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
             </div>
             <div className={styles.tooltipRow}>
               <span className={styles.tooltipLabel}>Utilization:</span>
-              <span className={styles.tooltipValue}>{(hoveredGPU.utilization * 100).toFixed(1)}%</span>
+              <span className={styles.tooltipValue}>
+                {(hoveredGPU.utilization * 100).toFixed(1)}%
+              </span>
             </div>
             <div className={styles.tooltipRow}>
               <span className={styles.tooltipLabel}>Temperature:</span>
-              <span className={styles.tooltipValue}>{(hoveredGPU.temperature * 100).toFixed(1)}%</span>
+              <span className={styles.tooltipValue}>
+                {(hoveredGPU.temperature * 100).toFixed(1)}%
+              </span>
             </div>
             {hoveredGPU.isStraggler && (
               <div className={`${styles.tooltipRow} ${styles.tooltipStraggler}`}>
                 <span className={styles.tooltipLabel}>⚠ Straggler:</span>
-                <span className={styles.tooltipValue}>{(hoveredGPU.stragglerSeverity * 100).toFixed(0)}%</span>
+                <span className={styles.tooltipValue}>
+                  {(hoveredGPU.stragglerSeverity * 100).toFixed(0)}%
+                </span>
               </div>
             )}
           </div>
@@ -409,36 +430,28 @@ export const GPUHeatmapCanvas = React.forwardRef<HTMLDivElement, GPUHeatmapCanva
         {/* Legend */}
         {showLegend && (
           <div className={styles.legend}>
-            <canvas ref={legendCanvasRef} className={styles.legendCanvas} aria-hidden="true" />
+            <canvas ref={legendCanvasRef} className={styles.legendCanvas} />
             <div className={styles.legendLabel}>{getColorModeLabel()}</div>
           </div>
         )}
 
         {/* FPS Counter */}
-        {showFPS && (
-          <div className={styles.fps}>
-            {threeScene.fps} FPS
-          </div>
-        )}
+        {showFPS && threeScene && <div className={styles.fps}>{threeScene.fps} FPS</div>}
 
         {/* Zoom indicator */}
         {enableZoomPan && zoom !== 1 && (
           <div className={styles.zoomIndicator}>
             {Math.round(zoom * 100)}%
-            <button
-              className={styles.zoomReset}
-              onClick={() => setZoom(1)}
-              aria-label="Reset zoom"
-            >
+            <button className={styles.zoomReset} onClick={() => setZoom(1)} aria-label='Reset zoom'>
               ✕
             </button>
           </div>
         )}
 
         {/* Straggler indicator */}
-        {cells.some(c => c.isStraggler) && (
-          <div className={styles.stragglerIndicator} aria-live="polite">
-            ⚠ {cells.filter(c => c.isStraggler).length} straggler(s) detected
+        {cells.some((c) => c.isStraggler) && (
+          <div className={styles.stragglerIndicator} aria-live='polite'>
+            ⚠ {cells.filter((c) => c.isStraggler).length} straggler(s) detected
           </div>
         )}
       </div>

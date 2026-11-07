@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from 'clsx';
+import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
@@ -11,7 +11,7 @@ export function formatBytes(bytes: number, decimals = 2): string {
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+  return `${Number.parseFloat((bytes / k ** i).toFixed(dm))} ${sizes[i]}`;
 }
 
 export function formatNumber(num: number, decimals = 0): string {
@@ -118,15 +118,22 @@ export function omit<T extends object, K extends keyof T>(obj: T, keys: K[]): Om
 }
 
 export function groupBy<T>(array: T[], keyFn: (item: T) => string): Record<string, T[]> {
-  return array.reduce((acc, item) => {
-    const key = keyFn(item);
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(item);
-    return acc;
-  }, {} as Record<string, T[]>);
+  return array.reduce(
+    (acc, item) => {
+      const key = keyFn(item);
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    },
+    {} as Record<string, T[]>
+  );
 }
 
-export function sortBy<T>(array: T[], keyFn: (item: T) => number | string, order: 'asc' | 'desc' = 'asc'): T[] {
+export function sortBy<T>(
+  array: T[],
+  keyFn: (item: T) => number | string,
+  order: 'asc' | 'desc' = 'asc'
+): T[] {
   return [...array].sort((a, b) => {
     const aVal = keyFn(a);
     const bVal = keyFn(b);
@@ -137,7 +144,7 @@ export function sortBy<T>(array: T[], keyFn: (item: T) => number | string, order
 
 export function uniqueBy<T>(array: T[], keyFn: (item: T) => string): T[] {
   const seen = new Set<string>();
-  return array.filter(item => {
+  return array.filter((item) => {
     const key = keyFn(item);
     if (seen.has(key)) return false;
     seen.add(key);
@@ -172,7 +179,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
  * Sleep/promise delay
  */
 export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -201,7 +208,7 @@ export async function retry<T>(
         throw error;
       }
 
-      const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
+      const delay = Math.min(baseDelay * 2 ** (attempt - 1), maxDelay);
       await sleep(delay);
     }
   }
@@ -290,7 +297,7 @@ export function formatRelativeTime(date: Date | string | number): string {
  * Format date to ISO string without milliseconds
  */
 export function formatISODate(date: Date | string | number): string {
-  return new Date(date).toISOString().split('.')[0] + 'Z';
+  return `${new Date(date).toISOString().split('.')[0]}Z`;
 }
 
 /**

@@ -1,8 +1,8 @@
 // Mock data generator for GPU Cluster Dashboard
 // Generates realistic mock data for 10K-129K GPUs
 
-import { writeFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 interface GPU {
   id: string;
@@ -59,7 +59,8 @@ function randomChoice<T>(arr: T[]): T {
 }
 
 function randomGaussian(mean: number, stdDev: number): number {
-  let u = 0, v = 0;
+  let u = 0;
+  let v = 0;
   while (u === 0) u = Math.random();
   while (v === 0) v = Math.random();
   return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
@@ -114,7 +115,7 @@ function generateGPUs(count: number): GPU[] {
 
 function generateNetworkLinks(gpus: GPU[]): NetworkLink[] {
   const links: NetworkLink[] = [];
-  const gpuMap = new Map(gpus.map(g => [g.id, g]));
+  const _gpuMap = new Map(gpus.map(g => [g.id, g]));
   
   for (const gpu of gpus) {
     const neighbors = gpus
@@ -219,12 +220,10 @@ function generateAlerts(gpus: GPU[]): Alert[] {
 }
 
 function main() {
-  const gpuCount = parseInt(process.env.GPU_COUNT || '10000', 10);
+  const gpuCount = Number.parseInt(process.env.GPU_COUNT || '10000', 10);
   const outputDir = join(__dirname, '..', 'public', 'mock-data');
   
   mkdirSync(outputDir, { recursive: true });
-  
-  console.log(`Generating mock data for ${gpuCount} GPUs...`);
   
   const gpus = generateGPUs(gpuCount);
   const networkLinks = generateNetworkLinks(gpus);
@@ -253,9 +252,6 @@ function main() {
   };
   
   writeFileSync(join(outputDir, 'summary.json'), JSON.stringify(summary, null, 2));
-  
-  console.log('Mock data generated successfully!');
-  console.log(JSON.stringify(summary, null, 2));
 }
 
 main();

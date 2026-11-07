@@ -3,9 +3,7 @@
     "collect": {
       "numberOfRuns": 3,
       "startServerCommand": "npm run preview",
-      "url": [
-        "http://localhost:3000"
-      ],
+      "url": ["http://localhost:3000"],
       "settings": {
         "preset": "desktop",
         "staticDistDir": "./dist"

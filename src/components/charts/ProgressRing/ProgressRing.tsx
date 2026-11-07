@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import type React from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import styles from './ProgressRing.module.css';
 
 export interface ProgressRingProps {
@@ -35,7 +36,10 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
   const radius = useMemo(() => (size - strokeWidth) / 2, [size, strokeWidth]);
   const circumference = useMemo(() => 2 * Math.PI * radius, [radius]);
   const clampedProgress = useMemo(() => Math.max(0, Math.min(100, progress)), [progress]);
-  const offset = useMemo(() => circumference * (1 - clampedProgress / 100), [circumference, clampedProgress]);
+  const offset = useMemo(
+    () => circumference * (1 - clampedProgress / 100),
+    [circumference, clampedProgress]
+  );
 
   useEffect(() => {
     if (!circleRef.current) return;
@@ -62,7 +66,7 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
         ref={svgRef}
         width={size}
         height={size}
-        role="img"
+        role='img'
         aria-label={ariaLabel}
         style={{ transform: 'rotate(-90deg)' }}
       >
@@ -71,7 +75,7 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          fill="none"
+          fill='none'
           stroke={trackColor}
           strokeWidth={strokeWidth}
         />
@@ -81,10 +85,10 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          fill="none"
+          fill='none'
           stroke={getProgressColor()}
           strokeWidth={strokeWidth}
-          strokeLinecap="round"
+          strokeLinecap='round'
           strokeDasharray={circumference}
           strokeDashoffset={circumference}
           style={{ transition: 'stroke-dashoffset 0.5s ease-out, stroke 0.3s ease' }}

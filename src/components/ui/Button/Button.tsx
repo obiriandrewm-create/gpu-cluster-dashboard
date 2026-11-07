@@ -1,6 +1,6 @@
-import { forwardRef, type ReactNode } from 'react';
-import { motion, type HTMLMotionProps } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { type HTMLMotionProps, motion } from 'framer-motion';
+import { type ReactNode, forwardRef } from 'react';
 import styles from './Button.module.css';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
@@ -64,33 +64,39 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {loading && (
           <span
             className={cn(styles.spinner, styles[`spinner-${loadingPosition}`])}
-            aria-hidden="true"
+            aria-hidden='true'
           >
             <svg
               className={styles.spinnerSvg}
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
+              viewBox='0 0 24 24'
+              fill='none'
+              xmlns='http://www.w3.org/2000/svg'
+              aria-hidden='true'
             >
               <circle
                 className={styles.spinnerCircle}
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeDasharray="31.4 31.4"
+                cx='12'
+                cy='12'
+                r='10'
+                stroke='currentColor'
+                strokeWidth='3'
+                strokeLinecap='round'
+                strokeDasharray='31.4 31.4'
               />
             </svg>
           </span>
         )}
-        {!loading && leftIcon && <span className={styles.leftIcon} aria-hidden="true">{leftIcon}</span>}
-        <span className={cn(styles.content, loading && styles.contentLoading)}>
-          {children}
-        </span>
-        {!loading && rightIcon && <span className={styles.rightIcon} aria-hidden="true">{rightIcon}</span>}
+        {!loading && leftIcon && (
+          <span className={styles.leftIcon} aria-hidden='true'>
+            {leftIcon}
+          </span>
+        )}
+        <span className={cn(styles.content, loading && styles.contentLoading)}>{children}</span>
+        {!loading && rightIcon && (
+          <span className={styles.rightIcon} aria-hidden='true'>
+            {rightIcon}
+          </span>
+        )}
       </motion.button>
     );
   }
@@ -111,7 +117,7 @@ export const ButtonGroup = forwardRef<HTMLDivElement, ButtonGroupProps>(
   ({ children, className, ariaLabel, ...props }, ref) => (
     <div
       ref={ref}
-      role="group"
+      role='group'
       aria-label={ariaLabel}
       className={cn(styles.group, className)}
       {...props}
@@ -132,7 +138,7 @@ export const ButtonToolbar = forwardRef<HTMLDivElement, ButtonToolbarProps>(
   ({ children, className, ariaLabel, ...props }, ref) => (
     <div
       ref={ref}
-      role="toolbar"
+      role='toolbar'
       aria-label={ariaLabel}
       className={cn(styles.toolbar, className)}
       {...props}

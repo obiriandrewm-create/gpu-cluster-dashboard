@@ -2,7 +2,7 @@
  * useWebGL - WebGL context and capability detection hook
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface WebGLCapabilities {
   /** WebGL version (1 or 2) */
@@ -97,7 +97,7 @@ const DEFAULT_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
  */
 function detectCapabilities(gl: WebGLRenderingContext | WebGL2RenderingContext): WebGLCapabilities {
   const isWebGL2 = gl instanceof WebGL2RenderingContext;
-  
+
   // Get extensions
   const extFloatTexture = gl.getExtension('OES_texture_float');
   const extHalfFloatTexture = gl.getExtension('OES_texture_half_float');
@@ -127,7 +127,7 @@ function detectCapabilities(gl: WebGLRenderingContext | WebGL2RenderingContext):
     compressedTexturesS3TC: !!extS3TC,
     compressedTexturesETC: !!extETC,
     compressedTexturesASTC: !!extASTC,
-    anisotropicFiltering: extAnisotropic 
+    anisotropicFiltering: extAnisotropic
       ? gl.getParameter(extAnisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT)
       : 1,
     vendor: gl.getParameter(gl.VENDOR),
@@ -161,12 +161,14 @@ export function useWebGL(options: UseWebGLOptions): UseWebGLReturn {
     canvasRefInternal.current = canvas;
 
     // Try WebGL2 first, fallback to WebGL1
-    let gl: WebGLRenderingContext | WebGL2RenderingContext | null = 
-      canvas.getContext('webgl2', contextAttributes);
-    
+    let gl: WebGLRenderingContext | WebGL2RenderingContext | null = canvas.getContext(
+      'webgl2',
+      contextAttributes
+    );
+
     if (!gl) {
       gl = (canvas.getContext('webgl', contextAttributes) ||
-           canvas.getContext('experimental-webgl', contextAttributes)) as WebGLRenderingContext | null;
+        canvas.getContext('experimental-webgl', contextAttributes)) as WebGLRenderingContext | null;
     }
 
     if (!gl) {
@@ -219,8 +221,9 @@ export function useWebGL(options: UseWebGLOptions): UseWebGLReturn {
   const loseContext = useCallback(() => {
     const canvas = canvasRef.current;
     if (canvas) {
-      const ext = canvas.getContext('webgl')?.getExtension('WEBGL_lose_context') ||
-                    canvas.getContext('webgl2')?.getExtension('WEBGL_lose_context');
+      const ext =
+        canvas.getContext('webgl')?.getExtension('WEBGL_lose_context') ||
+        canvas.getContext('webgl2')?.getExtension('WEBGL_lose_context');
       if (ext) {
         (ext as any).loseContext();
       }
@@ -231,8 +234,9 @@ export function useWebGL(options: UseWebGLOptions): UseWebGLReturn {
   const restoreContext = useCallback(() => {
     const canvas = canvasRef.current;
     if (canvas) {
-      const ext = canvas.getContext('webgl')?.getExtension('WEBGL_lose_context') ||
-                    canvas.getContext('webgl2')?.getExtension('WEBGL_lose_context');
+      const ext =
+        canvas.getContext('webgl')?.getExtension('WEBGL_lose_context') ||
+        canvas.getContext('webgl2')?.getExtension('WEBGL_lose_context');
       if (ext) {
         (ext as any).restoreContext();
       }
@@ -242,7 +246,7 @@ export function useWebGL(options: UseWebGLOptions): UseWebGLReturn {
   // Initialize on mount and when canvas changes
   useEffect(() => {
     initializeContext();
-    
+
     return () => {
       const canvas = canvasRef.current;
       if (canvas && (canvas as any).__webglCleanup) {
@@ -279,7 +283,10 @@ export function useWebGLSupport(): boolean {
 
   useEffect(() => {
     const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    const gl =
+      canvas.getContext('webgl2') ||
+      canvas.getContext('webgl') ||
+      canvas.getContext('experimental-webgl');
     setSupported(!!gl);
   }, []);
 

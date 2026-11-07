@@ -1,5 +1,17 @@
-import { scaleLinear, scaleTime, scaleOrdinal, scaleQuantize, scaleSequential, interpolateRdYlGn, interpolateViridis, interpolateInferno, easeCubic, easeQuad, transition } from 'd3';
-import type { ScaleLinear, ScaleTime, ScaleOrdinal, ScaleSequential, Transition } from 'd3';
+import {
+  easeCubic,
+  easeQuad,
+  interpolateInferno,
+  interpolateRdYlGn,
+  interpolateViridis,
+  scaleLinear,
+  scaleOrdinal,
+  scaleQuantize,
+  scaleSequential,
+  scaleTime,
+  transition,
+} from 'd3';
+import type { ScaleLinear, ScaleOrdinal, ScaleSequential, ScaleTime, Transition } from 'd3';
 
 export const HEALTH_COLORS = {
   healthy: '#10B981',
@@ -98,7 +110,10 @@ export function createStaggeredTransition(
   duration = 300,
   ease = easeCubic
 ): Transition<SVGGElement, unknown, null, undefined> {
-  return transition().duration(duration).ease(ease).delay((_, i) => i * baseDelay) as any;
+  return transition()
+    .duration(duration)
+    .ease(ease)
+    .delay((_, i) => i * baseDelay) as any;
 }
 
 export const CHART_MARGINS = {
@@ -124,7 +139,7 @@ export const EASING_FUNCTIONS = {
 export function formatSI(value: number, precision = 2): string {
   const units = ['', 'K', 'M', 'G', 'T', 'P'];
   const tier = Math.max(0, Math.min(Math.floor(Math.log10(Math.abs(value)) / 3), units.length - 1));
-  const scaled = value / Math.pow(1000, tier);
+  const scaled = value / 1000 ** tier;
   return `${scaled.toFixed(precision)}${units[tier]}`;
 }
 
@@ -132,14 +147,14 @@ export function formatBytesSI(bytes: number): string {
   if (bytes === 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
   const tier = Math.max(0, Math.min(Math.floor(Math.log2(bytes) / 10), units.length - 1));
-  return `${(bytes / Math.pow(1024, tier)).toFixed(1)} ${units[tier]}`;
+  return `${(bytes / 1024 ** tier).toFixed(1)} ${units[tier]}`;
 }
 
 export function formatBps(bps: number): string {
   if (bps === 0) return '0 bps';
   const units = ['bps', 'Kbps', 'Mbps', 'Gbps', 'Tbps'];
   const tier = Math.max(0, Math.min(Math.floor(Math.log10(bps) / 3), units.length - 1));
-  return `${(bps / Math.pow(1000, tier)).toFixed(1)} ${units[tier]}`;
+  return `${(bps / 1000 ** tier).toFixed(1)} ${units[tier]}`;
 }
 
 export function formatLatency(ms: number): string {
@@ -148,11 +163,7 @@ export function formatLatency(ms: number): string {
   return `${(ms / 1000).toFixed(2)} s`;
 }
 
-export function interpolateColor(
-  color1: string,
-  color2: string,
-  t: number
-): string {
+export function interpolateColor(color1: string, color2: string, t: number): string {
   const c1 = hexToRgb(color1);
   const c2 = hexToRgb(color2);
   if (!c1 || !c2) return color1;
@@ -166,9 +177,9 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return null;
   return {
-    r: parseInt(result[1]!, 16),
-    g: parseInt(result[2]!, 16),
-    b: parseInt(result[3]!, 16),
+    r: Number.parseInt(result[1]!, 16),
+    g: Number.parseInt(result[2]!, 16),
+    b: Number.parseInt(result[3]!, 16),
   };
 }
 

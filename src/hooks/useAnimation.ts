@@ -3,8 +3,8 @@
  * Provides animation utilities respecting prefers-reduced-motion
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // GSAP types (avoiding direct import for bundle size)
 interface GSAPTween {
@@ -52,7 +52,7 @@ async function loadGSAP(): Promise<GSAPStatic | null> {
   try {
     const module = await import('gsap');
     gsap = module.gsap as GSAPStatic;
-    
+
     // Configure GSAP for performance
     gsap.config({
       autoSleep: 120,
@@ -60,7 +60,7 @@ async function loadGSAP(): Promise<GSAPStatic | null> {
       nullTargetWarn: false,
       trialWarn: false,
     });
-    
+
     return gsap;
   } catch {
     return null;
@@ -90,7 +90,13 @@ export interface UseAnimationReturn {
   /** Create a timeline */
   createTimeline: (vars?: any) => Promise<GSAPTimeline | null>;
   /** Animate from current state */
-  animateFrom: (target: any, fromVars: any, toVars: any, duration?: number, ease?: string) => Promise<GSAPTween | null>;
+  animateFrom: (
+    target: any,
+    fromVars: any,
+    toVars: any,
+    duration?: number,
+    ease?: string
+  ) => Promise<GSAPTween | null>;
   /** Set values immediately */
   set: (target: any, vars: any) => void;
   /** Kill all animations on target */
@@ -117,77 +123,86 @@ export function useAnimation(options: UseAnimationOptions = {}): UseAnimationRet
   const animationRefs = useRef<Map<any, GSAPTween>>(new Map());
 
   // Animate using GSAP
-  const animate = useCallback(async (
-    target: any,
-    vars: any,
-    duration = defaultDuration,
-    ease = defaultEase
-  ): Promise<GSAPTween | null> => {
-    if (shouldReduceMotion) {
-      // Apply final values immediately
-      Object.assign(target, vars);
-      return null;
-    }
+  const animate = useCallback(
+    async (
+      target: any,
+      vars: any,
+      duration = defaultDuration,
+      ease = defaultEase
+    ): Promise<GSAPTween | null> => {
+      if (shouldReduceMotion) {
+        // Apply final values immediately
+        Object.assign(target, vars);
+        return null;
+      }
 
-    const gsapInstance = await loadGSAP();
-    if (!gsapInstance) return null;
+      const gsapInstance = await loadGSAP();
+      if (!gsapInstance) return null;
 
-    const tween = gsapInstance.to(target, {
-      ...vars,
-      duration: duration / 1000,
-      ease,
-    });
+      const tween = gsapInstance.to(target, {
+        ...vars,
+        duration: duration / 1000,
+        ease,
+      });
 
-    // Track for cleanup
-    animationRefs.current.set(target, tween);
+      // Track for cleanup
+      animationRefs.current.set(target, tween);
 
-    // Clean up on complete
-    tween.eventCallback('onComplete', () => {
-      animationRefs.current.delete(target);
-    });
+      // Clean up on complete
+      tween.eventCallback('onComplete', () => {
+        animationRefs.current.delete(target);
+      });
 
-    return tween;
-  }, [shouldReduceMotion, defaultDuration, defaultEase]);
+      return tween;
+    },
+    [shouldReduceMotion, defaultDuration, defaultEase]
+  );
 
   // Animate from specific values
-  const animateFrom = useCallback(async (
-    target: any,
-    fromVars: any,
-    toVars: any,
-    duration = defaultDuration,
-    ease = defaultEase
-  ): Promise<GSAPTween | null> => {
-    if (shouldReduceMotion) {
-      Object.assign(target, toVars);
-      return null;
-    }
+  const animateFrom = useCallback(
+    async (
+      target: any,
+      fromVars: any,
+      toVars: any,
+      duration = defaultDuration,
+      ease = defaultEase
+    ): Promise<GSAPTween | null> => {
+      if (shouldReduceMotion) {
+        Object.assign(target, toVars);
+        return null;
+      }
 
-    const gsapInstance = await loadGSAP();
-    if (!gsapInstance) return null;
+      const gsapInstance = await loadGSAP();
+      if (!gsapInstance) return null;
 
-    const tween = gsapInstance.fromTo(target, fromVars, {
-      ...toVars,
-      duration: duration / 1000,
-      ease,
-    });
+      const tween = gsapInstance.fromTo(target, fromVars, {
+        ...toVars,
+        duration: duration / 1000,
+        ease,
+      });
 
-    animationRefs.current.set(target, tween);
-    tween.eventCallback('onComplete', () => {
-      animationRefs.current.delete(target);
-    });
+      animationRefs.current.set(target, tween);
+      tween.eventCallback('onComplete', () => {
+        animationRefs.current.delete(target);
+      });
 
-    return tween;
-  }, [shouldReduceMotion, defaultDuration, defaultEase]);
+      return tween;
+    },
+    [shouldReduceMotion, defaultDuration, defaultEase]
+  );
 
   // Create timeline
-  const createTimeline = useCallback(async (vars?: any): Promise<GSAPTimeline | null> => {
-    if (shouldReduceMotion) return null;
+  const createTimeline = useCallback(
+    async (vars?: any): Promise<GSAPTimeline | null> => {
+      if (shouldReduceMotion) return null;
 
-    const gsapInstance = await loadGSAP();
-    if (!gsapInstance) return null;
+      const gsapInstance = await loadGSAP();
+      if (!gsapInstance) return null;
 
-    return gsapInstance.timeline(vars);
-  }, [shouldReduceMotion]);
+      return gsapInstance.timeline(vars);
+    },
+    [shouldReduceMotion]
+  );
 
   // Set values immediately
   const set = useCallback((target: any, vars: any) => {
@@ -275,7 +290,7 @@ async function loadScrollTrigger(): Promise<any> {
   try {
     const gsapInstance = await loadGSAP();
     if (!gsapInstance) return null;
-    
+
     const module = await import('gsap/ScrollTrigger');
     ScrollTrigger = module.ScrollTrigger;
     gsapInstance.registerPlugin(ScrollTrigger);
@@ -285,9 +300,7 @@ async function loadScrollTrigger(): Promise<any> {
   }
 }
 
-export function useScrollAnimation(
-  options: UseScrollAnimationOptions
-): UseScrollAnimationReturn {
+export function useScrollAnimation(options: UseScrollAnimationOptions): UseScrollAnimationReturn {
   const {
     trigger,
     start = 'top bottom',
@@ -329,10 +342,8 @@ export function useScrollAnimation(
       const st = await loadScrollTrigger();
       if (!st) return;
 
-      const triggerEl = typeof trigger === 'string' 
-        ? document.querySelector(trigger) 
-        : trigger;
-      
+      const triggerEl = typeof trigger === 'string' ? document.querySelector(trigger) : trigger;
+
       if (!triggerEl) return;
 
       let tl: GSAPTimeline | null = null;
@@ -392,7 +403,7 @@ async function loadFlip(): Promise<any> {
   try {
     const gsapInstance = await loadGSAP();
     if (!gsapInstance) return null;
-    
+
     const module = await import('gsap/Flip');
     Flip = module.Flip;
     gsapInstance.registerPlugin(Flip);
@@ -410,25 +421,28 @@ export function useFlip(options: UseFlipOptions): UseFlipReturn {
 
   const record = useCallback(async () => {
     if (shouldReduceMotion) return;
-    
+
     const flip = await loadFlip();
     if (!flip) return;
 
     flipStateRef.current = flip.getState(targets);
   }, [targets, shouldReduceMotion]);
 
-  const play = useCallback(async (vars: any = {}): Promise<GSAPTween | null> => {
-    if (shouldReduceMotion || !flipStateRef.current) return null;
+  const play = useCallback(
+    async (vars: any = {}): Promise<GSAPTween | null> => {
+      if (shouldReduceMotion || !flipStateRef.current) return null;
 
-    const flip = await loadFlip();
-    if (!flip) return null;
+      const flip = await loadFlip();
+      if (!flip) return null;
 
-    return flip.from(flipStateRef.current, {
-      duration: (vars.duration ?? 300) / 1000,
-      ease: vars.ease ?? 'power2.inOut',
-      ...vars,
-    });
-  }, [shouldReduceMotion]);
+      return flip.from(flipStateRef.current, {
+        duration: (vars.duration ?? 300) / 1000,
+        ease: vars.ease ?? 'power2.inOut',
+        ...vars,
+      });
+    },
+    [shouldReduceMotion]
+  );
 
   const kill = useCallback(() => {
     flipStateRef.current = null;
@@ -457,7 +471,10 @@ export interface UseSpringOptions {
   onUpdate?: (value: number) => void;
 }
 
-export function useSpring(options: UseSpringOptions): { value: number; setTarget: (value: number) => void } {
+export function useSpring(options: UseSpringOptions): {
+  value: number;
+  setTarget: (value: number) => void;
+} {
   const {
     initialValue,
     targetValue,
@@ -475,35 +492,38 @@ export function useSpring(options: UseSpringOptions): { value: number; setTarget
   const targetRef = useRef(targetValue);
 
   // Update target
-  const setTarget = useCallback((newTarget: number) => {
-    targetRef.current = newTarget;
-    
-    if (shouldReduceMotion) {
-      setValue(newTarget);
-      onUpdate?.(newTarget);
-      return;
-    }
+  const setTarget = useCallback(
+    (newTarget: number) => {
+      targetRef.current = newTarget;
 
-    // Animate to new target using GSAP
-    loadGSAP().then((gsapInstance) => {
-      if (!gsapInstance) return;
-      
-      if (animationRef.current) {
-        animationRef.current.kill();
+      if (shouldReduceMotion) {
+        setValue(newTarget);
+        onUpdate?.(newTarget);
+        return;
       }
 
-      const obj = { value };
-      animationRef.current = gsapInstance.to(obj, {
-        value: newTarget,
-        duration: 1,
-        ease: 'elastic.out(1, 0.5)',
-        onUpdate: () => {
-          setValue(obj.value);
-          onUpdate?.(obj.value);
-        },
+      // Animate to new target using GSAP
+      loadGSAP().then((gsapInstance) => {
+        if (!gsapInstance) return;
+
+        if (animationRef.current) {
+          animationRef.current.kill();
+        }
+
+        const obj = { value };
+        animationRef.current = gsapInstance.to(obj, {
+          value: newTarget,
+          duration: 1,
+          ease: 'elastic.out(1, 0.5)',
+          onUpdate: () => {
+            setValue(obj.value);
+            onUpdate?.(obj.value);
+          },
+        });
       });
-    });
-  }, [shouldReduceMotion, onUpdate]);
+    },
+    [shouldReduceMotion, onUpdate]
+  );
 
   // Update when targetValue prop changes
   useEffect(() => {
